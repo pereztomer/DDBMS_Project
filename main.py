@@ -20,11 +20,6 @@ def connect_to_globalDB() -> pyodbc.Cursor:
     return conn
 
 
-
-
-
-
-
 def create_tables():
     conn = connect_to_db()
     cursor = conn.cursor()
@@ -112,6 +107,7 @@ if __name__ == '__main__':
     #for row in cursor:
         #print(row)
     create_tables()
+    exit()
     cursor.execute('''
                   insert into ProductsOrdered(transactionID,productsID,amount)
                      values
