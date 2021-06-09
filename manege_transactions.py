@@ -94,6 +94,7 @@ def manege_transactions(T):
                 # requesting writing lock for the whole website
                 #############################################
                 # update log of accessing to productordered
+                print("hello")
 
                 cursor_row.execute('INSERT INTO Log (timestamp, relation, transactionID, productID, action, record) '
                                    'VALUES (current_date ,ProductsOrdered, transactionID, productID, 'read',reading_site_query   )')
