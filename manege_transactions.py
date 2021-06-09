@@ -2,6 +2,8 @@ import glob
 import os
 import findspark
 from pyspark.sql import SparkSession
+import pyodbc
+
 
 # Constants
 X = 11
@@ -12,6 +14,24 @@ from pyspark.sql.functions import avg
 from pyspark.sql import functions as F
 from pyspark.sql.window import Window
 from pyspark.sql.types import IntegerType, FloatType
+
+def connect_to_db(username):
+    server = 'technionddscourse.database.windows.net'
+    database = username
+    username = 'rubensasson'
+    password = 'Qwerty12!'
+    conn = pyodbc.connect(
+        'DRIVER={SQL Server};'
+        'SERVER=' + server + ';'
+        'DATABASE=' + database + ';'
+        'UID=' + username + ';'
+        'PWD=' + password + ';')
+    return conn
+
+
+
+
+
 
 
 def init_spark(app_name: str):
@@ -38,7 +58,15 @@ def manege_transactions(T):
         if not file_path.endswith('_' + str(X)+'.csv'):
             print(f"File {file_path} not in correct format - was rejected")
         else:
-            query = spark.read.format("csv").option("header", "true").load("file")
-            query = query.repartition('categoryID')
+            query = spark.read.format("csv").option("header", "true").load(file_path)
+            query = query.select('categoryID').rdd.map(r >= r(0)).collect()
+            print(query)
+            exit()
+            conn = connect_to_db('dbteam')
+            cursor = conn.cursor()
+            cursor.execute('select siteName '
+                           'from table CategoriesToSites'
+                           'where categoryID in (12,12,32)')
+
             print(query.show())
             exit()
