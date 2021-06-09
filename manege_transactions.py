@@ -18,7 +18,7 @@ from pyspark.sql.types import IntegerType, FloatType
 def connect_to_db(username):
     server = 'technionddscourse.database.windows.net'
     database = username
-    username = 'rubensasson'
+    username = username
     password = 'Qwerty12!'
     conn = pyodbc.connect(
         'DRIVER={SQL Server};'
@@ -59,14 +59,14 @@ def manege_transactions(T):
             print(f"File {file_path} not in correct format - was rejected")
         else:
             query = spark.read.format("csv").option("header", "true").load(file_path)
-            query = query.select('categoryID').rdd.map(r >= r(0)).collect()
-            print(query)
-            exit()
+            categories = list(query.select('categoryID').toPandas()['categoryID'])
+            categories = '('+','.join(str(e) for e in categories)+')'
             conn = connect_to_db('dbteam')
             cursor = conn.cursor()
             cursor.execute('select siteName '
                            'from table CategoriesToSites'
-                           'where categoryID in (12,12,32)')
+                           'where categoryID in' + categories)
 
-            print(query.show())
+            for row in cursor.fetchall():
+                print(row)
             exit()
