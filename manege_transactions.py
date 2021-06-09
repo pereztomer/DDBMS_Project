@@ -63,10 +63,18 @@ def manege_transactions(T):
             categories = '('+','.join(str(e) for e in categories)+')'
             conn = connect_to_db('dbteam')
             cursor = conn.cursor()
-            cursor.execute('select siteName '
-                           'from table CategoriesToSites'
-                           'where categoryID in' + categories)
+            cursor.execute('select distinct siteName, categoryID from CategoriesToSites where categoryID in' + categories)
 
-            for row in cursor.fetchall():
-                print(row)
-            exit()
+            for row in cursor:
+                conn_row = connect_to_db(row[0])
+                cursor_row = conn_row.cursor()
+                cursor_row.execute()
+
+                 read lock
+                cursor.execute('select *  from productsinventory where  in invenotry AND')
+                write lock
+                cursor.execute('')
+                exit()
+#
+#
+#
