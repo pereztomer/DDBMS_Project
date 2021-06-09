@@ -35,9 +35,10 @@ def manege_transactions(T):
     spark, sc = init_spark("manege_transactions")
 
     for file_path in list_of_files:
-        if not file_path.endswith('_' + str(X)):
+        if not file_path.endswith('_' + str(X)+'.csv'):
             print(f"File {file_path} not in correct format - was rejected")
         else:
-            query = spark.read.csv(file_path)
-            print(query.take(10))
+            query = spark.read.format("csv").option("header", "true").load("file")
+            query = query.repartition('categoryID')
+            print(query.show())
             exit()
