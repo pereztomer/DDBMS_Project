@@ -1,6 +1,5 @@
 import pyodbc
-from manege_transactions import manege_transactions
-
+import constants
 
 def connect_to_db(username):
     server = 'technionddscourse.database.windows.net'
@@ -75,10 +74,26 @@ def functionDrop():
 
 
 def update_inventory(transactionID):
+    # needs to check if we need to update log table
+    conn = connect_to_db('rubensasson')
+    cursor = conn.cursor()
+    query = cursor.execute('select * from productsInventory')
+    if query.count() == 0:
+        for i in range(1, constants.Y):
+            if i == 1:
+                cursor.execute("INSERT INTO productsInventory(productID, inventory) VALUES (?,?)",
+                                (i, constants.COMPLEMENTARY_AMOUNT))
+            else:
+                cursor.execute("INSERT INTO productsInventory(productID, inventory) VALUES (?,?)",
+                               (i, constants.P_AMOUNT))
+    else:
+        cursor.execute('UPDATE productsInventory SET Inventory = constants.COMPLEMENTARY_AMOUNT Where productID = 1')
+        cursor.execute("UPDATE productsInventory SET Inventory = constants.P_AMOUNT Where productID != 1")
+
 
 
 
 if __name__ == '__main__':
-    pass
+    update_inventory('moshe')
 
 

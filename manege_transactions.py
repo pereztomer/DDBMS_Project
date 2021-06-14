@@ -7,10 +7,6 @@ import time
 from pyspark.sql.functions import asc, current_date
 from main import connect_to_db
 
-# Constants
-X = 11
-Y = 6
-Z = 59
 
 def init_spark(app_name: str):
     spark = SparkSession.builder.appName(app_name).getOrCreate()
