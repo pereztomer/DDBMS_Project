@@ -51,9 +51,9 @@ def lock_directory(directory_pass='C:/Users/Tomer/PycharmProjects/DDBMS_Project/
     pass
 
 
-
 def manege_transactions(T):
-    dir_name = '/orders/'
+    calc_time_left = func_cal_time_left(T, time.time())
+    dir_name = 'orders/'
     list_of_files = sorted(filter(os.path.isfile, glob.glob(dir_name + '*')))
     lock_directory()
     if len(list_of_files) == 0:
@@ -63,28 +63,42 @@ def manege_transactions(T):
     spark, sc = init_spark("manege_transactions")
 
     for file_path in list_of_files:
-        transactionID = file_path.baendswith('')
-        transactionID = os.path.splitext(os.path.basename(transactionID))[1]
-
-        if not file_path.endswith('_' + str(X) + '.csv'):
+        # NEEDS TO CHECK IF THE FILE IS ACCORDING TO FORMAT!!
+        if not file_path.endswith('_11.csv'):
             print(f"File {file_path} not in correct format - was rejected")
         else:
+            transactionID = os.path.splitext(os.path.basename(file_path))[0]
             query = spark.read.format("csv").option("header", "true").load(file_path)
+            # relevant categories of query
             categories = list(query.select('categoryID').toPandas()['categoryID'])
             categories = '(' + ','.join(str(e) for e in categories) + ')'
             conn = connect_to_db('dbteam')
             cursor = conn.cursor()
-            cursor.execute('select distinct siteName, categoryID from CategoriesToSites where categoryID in' + categories)
-            flag = True
+            cursor.execute('select distinct siteName, categoryID from CategoriesToSites where categoryID in'+categories)
+            site_flag = True
             for row in cursor:
-                if not flag:
+                if not site_flag:
                     break
+                site_flag = siteProcessing(row, query, file_path, transactionID, calc_time_left)
 
-                #FIRST PROCESS DISTRIBUTIONS WILL START HERE
-                site_p = multiprocessing.process(target= siteProcessing, args = [row, query, file_path, transactionID])
-                site_p.start()
 
+            # query proccessing or inside site proccessing
+            # rollback
         # checking if all sites were successfully if not rollback
+
+
+def siteProcessing(row, query, file_path, transactionID, calc_time_left):
+    conn_site = connect_to_db(row[0])
+    wantedProductID = query.filter(query.categoryID == str(row[1])).select('productID')
+    wantedProductID = list(wantedProductID.toPandas()['productID'])
+    wantedProductID = '(' + ','.join(str(e) for e in wantedProductID) + ')'
+    cursor_site = conn_site.cursor()
+    for prodID in wantedProductID:
+        if not productProcessing(file_path, query, transactionID, prodID, cursor_site, calc_time_left):
+            # rollback
+            return False
+    return True
+
 
 def productProcessing(file_path, query, transactionID, productID, cursor_row):
     lockCursor = cursor_row.execute('select distinct lockType from Locks where lock.productID = wantedProductID')
@@ -161,12 +175,7 @@ def productProcessing(file_path, query, transactionID, productID, cursor_row):
     cursor_row.execute("DELETE FROM Locks where Locks.transactionID == transactionID AND Locks.ProductID==ProductID")
 
 
-def siteProcessing(row, query, file_path, transactionID):
-    conn_row = connect_to_db(row[0])
-    wantedProductID = query.filter(query.categoryID == str(row[1])).select('productID')
-    wantedProductID = list(wantedProductID.toPandas()['productID'])
-    wantedProductID = '(' + ','.join(str(e) for e in wantedProductID) + ')'
-    cursor_row = conn_row.cursor()
-    for prodID in wantedProductID:
-        product_p = multiprocessing.Process(target=productProcessing, args=[file_path, query, transactionID, prodID, cursor_row])
-        product_p.start()
+def func_cal_time_left(T, initial_time):
+    def calc_time_left():
+        return T - (time.time() - initial_time)
+    return calc_time_left()

@@ -1,5 +1,5 @@
 import pyodbc
-
+from manege_transactions import manege_transactions
 
 def connect_to_db() -> pyodbc.Cursor:
     server = 'technionddscourse.database.windows.net'
@@ -99,6 +99,10 @@ def functionDrop():
     #print(row)
 
 if __name__ == '__main__':
+    manege_transactions(10)
+    exit()
+
+
     #functionDrop()
     #conn = connect_to_globalDB()
     conn = connect_to_db()
@@ -107,7 +111,6 @@ if __name__ == '__main__':
     #for row in cursor:
         #print(row)
     create_tables()
-    exit()
     cursor.execute('''
                   insert into ProductsOrdered(transactionID,productsID,amount)
                      values
