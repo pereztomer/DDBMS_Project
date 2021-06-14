@@ -40,7 +40,7 @@ def lock_directory(directory_pass='C:/Users/Tomer/PycharmProjects/DDBMS_Project/
 
 
 def manege_transactions(T):
-    dir_name = 'C:/Users/Tomer/PycharmProjects/DDBMS_Project/orders/'
+    dir_name = '/orders/'
     list_of_files = sorted(filter(os.path.isfile, glob.glob(dir_name + '*')))
     lock_directory()
     if len(list_of_files) == 0:
