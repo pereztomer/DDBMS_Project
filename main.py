@@ -1,22 +1,18 @@
 import pyodbc
 from manege_transactions import manege_transactions
 
-def connect_to_db() -> pyodbc.Cursor:
-    server = 'technionddscourse.database.windows.net'
-    database = 'rubensasson'
-    username = 'rubensasson'
-    password = 'Qwerty12!'
-    conn = pyodbc.connect(
-        'DRIVER={ODBC Driver 17 for SQL Server};SERVER=' + server + ';DATABASE=' + database + ';UID=' + username + ';PWD=' + password)
-    return conn
 
-def connect_to_globalDB() -> pyodbc.Cursor:
+def connect_to_db(username):
     server = 'technionddscourse.database.windows.net'
-    database = 'dbteam'
-    username = 'dbteam'
+    database = username
+    username = username
     password = 'Qwerty12!'
     conn = pyodbc.connect(
-        'DRIVER={ODBC Driver 17 for SQL Server};SERVER=' + server + ';DATABASE=' + database + ';UID=' + username + ';PWD=' + password)
+        'DRIVER={SQL Server};'
+        'SERVER=' + server + ';'
+                             'DATABASE=' + database + ';'
+                                                      'UID=' + username + ';'
+                                                                          'PWD=' + password + ';')
     return conn
 
 
@@ -62,7 +58,6 @@ def create_tables():
     conn.commit()
 
 
-
 def functionDrop():
     conn = connect_to_db()
     cursor = conn.cursor()
@@ -78,61 +73,12 @@ def functionDrop():
                 ''')
     conn.commit()
 
-#cursor.execute()
+
+def update_inventory(transactionID):
 
 
-
-
-
-# cursor.execute('''
-#                 insert into ProductsOrdered(transactionID,productsID,amount)
-#                 values
-#                 ('computer',1,1000),
-#                 ('bikini',69, 123),
-#                 ('jahnun',12, 12000)
-#                 ''')
-# cnxn.commit()'''
-
-
-#cursor.execute('select * from ProductsOrdered')
-#for row in cursor:
-    #print(row)
 
 if __name__ == '__main__':
-    manege_transactions(10)
-    exit()
+    pass
 
 
-    #functionDrop()
-    #conn = connect_to_globalDB()
-    conn = connect_to_db()
-    cursor = conn.cursor()
-    #cursor.execute('select * from categoriesToSites')
-    #for row in cursor:
-        #print(row)
-    create_tables()
-    cursor.execute('''
-                  insert into ProductsOrdered(transactionID,productsID,amount)
-                     values
-                     ('computer',1,1000)
-                     ''')
-    cursor.execute('''
-                      insert into ProductsInventory(productID,inventory)
-                         values
-                         (1,30)
-                         ''')
-    cursor.execute('''
-                      insert into Log(timestamp,relation,transactionID, productID,action,record)
-                         values
-                         (current_date,'ProductsOrdered',1,1,'read','Select * from ProductsOrdered')
-                         ''')
-    conn.commit()
-    cursor.execute('select * from ProductsOrdered')
-    for row in cursor:
-        print(row)
-    cursor.execute('select * from ProductsInventory')
-    for row in cursor:
-        print(row)
-    cursor.execute('select * from Log')
-    for row in cursor:
-        print(row)

@@ -1,45 +1,16 @@
 import glob
-import os
 import findspark
 from pyspark.sql import SparkSession
 import pyodbc
 import os
-import multiprocessing
 import time
-
-
-"""    each process initilize with multiprocessing.process(target = funcitionName)
-    to start the function proceess we will use p1.start()
-    we can contiou the script after .start()
-    join - will wait to be done before the script continou
-    for loop to initialize processes
-"""
-#####
+from pyspark.sql.functions import asc, current_date
+from main import connect_to_db
 
 # Constants
 X = 11
 Y = 6
 Z = 59
-from pyspark.sql.functions import asc, current_date
-from pyspark.sql.functions import avg
-from pyspark.sql import functions as F
-from pyspark.sql.window import Window
-from pyspark.sql.types import IntegerType, FloatType
-
-
-def connect_to_db(username):
-    server = 'technionddscourse.database.windows.net'
-    database = username
-    username = username
-    password = 'Qwerty12!'
-    conn = pyodbc.connect(
-        'DRIVER={SQL Server};'
-        'SERVER=' + server + ';'
-                             'DATABASE=' + database + ';'
-                                                      'UID=' + username + ';'
-                                                                          'PWD=' + password + ';')
-    return conn
-
 
 def init_spark(app_name: str):
     spark = SparkSession.builder.appName(app_name).getOrCreate()
@@ -74,15 +45,16 @@ def manege_transactions(T):
             categories = '(' + ','.join(str(e) for e in categories) + ')'
             conn = connect_to_db('dbteam')
             cursor = conn.cursor()
-            cursor.execute('select distinct siteName, categoryID from CategoriesToSites where categoryID in'+categories)
+            cursor.execute(
+                'select distinct siteName, categoryID from CategoriesToSites where categoryID in' + categories)
             site_flag = True
             for row in cursor:
                 if not site_flag:
-                    break
+                    # rollback!
+                    pass
                 site_flag = siteProcessing(row, query, file_path, transactionID, calc_time_left)
 
-
-            # query proccessing or inside site proccessing
+            # query processing or inside site processing
             # rollback
         # checking if all sites were successfully if not rollback
 
@@ -100,79 +72,101 @@ def siteProcessing(row, query, file_path, transactionID, calc_time_left):
     return True
 
 
-def productProcessing(file_path, query, transactionID, productID, cursor_row):
-    lockCursor = cursor_row.execute('select distinct lockType from Locks where lock.productID = wantedProductID')
+def productProcessing(file_path, query, transactionID, wantedProductID, cursor_site, calc_time_left):
+    lockCursor = cursor_site.execute('select distinct lockType from Locks where locks.productID = wantedProductID')
     if lockCursor.count() == 0:
         productLockType = 'noLockExists'
+        # now we are taking a writing lock without checking availability in inventory
+        string_query = str(
+            ("INSERT INTO Locks(transactionID, ProductID,lockType) VALUES (?,?,?)", transactionID, wantedProductID,
+             'Write'))
+        cursor_site.execute("INSERT INTO Log(timestamp, transactionID, productID, action, record) VALUES (?,?,?,?,?)",
+                            (current_date(), 'Locks', transactionID, wantedProductID, 'Write', string_query))
+        ## TAKING WRITE LOCK ###
+        cursor_site.execute("INSERT INTO Locks(transactionID, ProductID,lockType) VALUES (?,?,?)", transactionID,
+                            wantedProductID, 'Write')
     else:
+        # we don't know which type of lock it is
         lockTypeTable = list(lockCursor.select('lockType').toPandas()['lockType'])
         productLockType = '(' + ','.join(str(e) for e in lockTypeTable) + ')'
 
     while productLockType == 'write':
-        lockCursor = cursor_row.execute(
-            'select distinct lockType from Locks where lock.productID = wantedProductID')
+        if calc_time_left() <= 0:
+            return False
+        lockCursor = cursor_site.execute('select distinct lockType from Locks where lock.productID = wantedProductID')
         if lockCursor.count() == 0:
             productLockType = 'noLockExists'
+            string_query = str(
+                ("INSERT INTO Locks(transactionID, ProductID,lockType) VALUES (?,?,?)", transactionID, wantedProductID,
+                 'Write'))
+            cursor_site.execute(
+                "INSERT INTO Log(timestamp, transactionID, productID, action, record) VALUES (?,?,?,?,?)",
+                (current_date(), 'Locks', transactionID, wantedProductID, 'Write', string_query))
+            ## TAKING WRITE LOCK ###
+            cursor_site.execute("INSERT INTO Locks(transactionID, ProductID,lockType) VALUES (?,?,?)", transactionID,
+                                wantedProductID, 'Write')
         else:
-            lockTypeTable = list(lockCursor.select('lockType').toPandas()['lockType'])
-            productLockType = '(' + ','.join(str(e) for e in lockTypeTable) + ')'
+            productLockType = list(lockCursor.select('lockType').toPandas()['lockType'])[0]
+
     ## HERE WER ARE SURE THAT WE HAVE READ OR NONE LockTpe ON THE SPECIFIC ProductID ####
     #####################################################
-    string_query = str(
-        ("INSERT INTO Locks(transactionID, ProductID,lockType) VALUES (?,?,?)", transactionID, productID, 'Read'))
-    ## insert into LOG
-    cursor_row.execute("INSERT INTO Log(timestamp, transactionID, productID, action, record) VALUES (?,?,?,?,?)",
-                       (current_date, 'ProductsOrdered', transactionID, productID, 'Read', string_query))
-    ## TAKING READING LOCK
-    cursor_row.execute("INSERT INTO Locks(transactionID, ProductID,lockType) VALUES (?,?,?)", transactionID,
-                       wantedProductID, 'Read')
+    if productLockType == 'read':
+        string_query = str(
+            ("INSERT INTO Locks(transactionID, ProductID,lockType) VALUES (?,?,?)", transactionID, wantedProductID,
+             'Read'))
+        # insert into LOG
+        cursor_site.execute("INSERT INTO Log(timestamp, transactionID, productID, action, record) VALUES (?,?,?,?,?)",
+                            (current_date, 'ProductsOrdered', transactionID, wantedProductID, 'Read', string_query))
+        # TAKING READING LOCK
+        cursor_site.execute("INSERT INTO Locks(transactionID, ProductID,lockType) VALUES (?,?,?)", transactionID,
+                            wantedProductID, 'Read')
 
-    ## CHECKING SITE INVENTORY
-    reading_site_query = 'select productID,inventory from productsInventory where productID in' + productID
+    # CHECKING SITE INVENTORY
+    reading_site_query = 'select productID,inventory from productsInventory where productID in' + wantedProductID
 
-    cursor_row.execute(reading_site_query)
+    cursor_site.execute(reading_site_query)
 
-    for user_row in cursor_row:
+    for user_row in cursor_site:
         product_amount = query.filter(query.productID == int(user_row[1])).select('amount')
         product_amount_lst = list(product_amount.toPandas()['amount'])
         product_amount = sum(product_amount_lst)
         if user_row[1] < product_amount:
             print(f"Query {file_path} can not be completed")
-
-            ###############################################
-            # a rollback mechanism needs to be created here
-            ###############################################
-            flag = False
-            break
+            return False
 
     #############################################
     # requesting writing lock for the whole website
+    # we already know that out read lock is inside the lock table
     #############################################
-    number_of_readLocks = cursor_row.execute(
-        'select * from Locks where lock.productID = wantedProductID')
-    while number_of_readLocks.count() > 1:
-        number_of_readLocks = cursor_row.execute(
+    if productLockType == 'read':
+        number_of_readLocks = cursor_site.execute(
             'select * from Locks where lock.productID = wantedProductID')
+        while number_of_readLocks.count() > 1:
+            if calc_time_left() <= 0:
+                return False
+            number_of_readLocks = cursor_site.execute(
+                'select * from Locks where lock.productID = wantedProductID')
     ## WE ARE THE ONLY ONES WITH READ LOCK ON THE PRODUCT ###
     ## ASKING FOR WRITING LOCK##
     ## TAKING READING LOCK
     ## insert into LOG
-    cursor_row.execute("INSERT INTO Log(timestamp, transactionID, productID, action, record) VALUES (?,?,?,?,?)",
-                       (current_date, 'ProductsOrdered', transactionID, productID, 'Write', string_query))
-    ## TAKING WRITE LOCK ###
-    cursor_row.execute("INSERT INTO Locks(transactionID, ProductID,lockType) VALUES (?,?,?)", transactionID,
-                    productID, 'Write')
-    ### DELETE READ LOCK FROM Locks
-    cursor_row.execute("DELETE FROM Locks where Locks.transactionID == transactionID AND Locks.ProductID==ProductID")
+    string_query = "UPDATE Locks SET LockType= 'Write' WHERE ProductID=wantedProductID"
+    cursor_site.execute("INSERT INTO Log(timestamp, transactionID, productID, action, record) VALUES (?,?,?,?,?)",
+                       (current_date, 'Locks', transactionID, wantedProductID, 'update', string_query))
+    ## Updating to write lock ###
+    cursor_site.execute(string_query)
 
     ## UPDATING INVENTORY
-    tmp = cursor_row.execute('select inventory FROM ProductsInventory where ProductsInventory.ProductID==ProductID')
-    product_inventory = list(tmp.toPandas()['inventory'])
-    product_inventory = product_inventory[0]
-    cursor_row.execute("INSERT INTO ProductsInventory(productID, inventory) VALUES (?,?)",
-                       (productID, product_inventory - product_amount))
+    if calc_time_left() <= 0:
+        return False
+    string_query = "UPDATE ProductsInventory SET inventory = Inventory - amount WHERE ProductID=wantedProductID"
+    cursor_site.execute("INSERT INTO Log(timestamp, transactionID, productID, action, record) VALUES (?,?,?,?,?)",
+                        (current_date, 'ProductsInventory', transactionID, wantedProductID, 'update', string_query))
+    cursor_site.execute(string_query)
+
     ##### REALEASE WRITE LOCK ####
-    cursor_row.execute("DELETE FROM Locks where Locks.transactionID == transactionID AND Locks.ProductID==ProductID")
+    cursor_site.execute("DELETE FROM Locks where Locks.transactionID == transactionID AND Locks.ProductID==ProductID")
+    return True
 
 
 def func_cal_time_left(T, initial_time):
