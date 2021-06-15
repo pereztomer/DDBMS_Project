@@ -1,6 +1,8 @@
 import pyodbc
 import constants
 import manege_transactions
+import datetime
+from pyspark.sql.functions import asc, current_date
 
 def connect_to_db(username):
     server = 'technionddscourse.database.windows.net'
@@ -51,7 +53,7 @@ def create_tables():
                           transactionID varchar(30),
                           productID integer,
                           lockType varchar(10),
-                          foreign key(transactionID,productID) references ProductsOrdered(transactionID,productID),
+                          foreign key(productID) references productsInventory(productID),
                           primary key(transactionID,productID,lockType)
                       );''')
 
@@ -61,10 +63,14 @@ def create_tables():
 def functionDrop():
     conn = connect_to_db("rubensasson")
     cursor = conn.cursor()
-    cursor.execute('''
-                 DROP TABLE Log;
-                ''')
-    conn.commit()
+    #cursor.execute('''
+    #                     DROP TABLE Locks;
+    #                   ''')
+    #conn.commit()
+    #cursor.execute('''
+    #             DROP TABLE Log;
+    #            ''')
+    #conn.commit()
     cursor.execute('''
                  DROP TABLE ProductsOrdered;
                 ''')
@@ -73,6 +79,7 @@ def functionDrop():
                  DROP TABLE ProductsInventory;
                 ''')
     conn.commit()
+
 
 
 def update_inventory(transactionID):
@@ -96,11 +103,14 @@ def update_inventory(transactionID):
 
 
 if __name__ == '__main__':
-
-    manege_transactions.manege_transactions(100)
-    # conn = connect_to_db("rubensasson")
-    # personnal_cursor = conn.cursor()
-    # personnal_cursor.execute("INSERT into productsInventory(productID, inventory) VALUES (?,?)", (2, 20))
-    # conn.commit()
+    #functionDrop()
+    #create_tables()
+    #manege_transactions.manege_transactions(100)
+    print(current_date())
+    #conn = connect_to_db("rubensasson")
+    #personnal_cursor = conn.cursor()
+    #personnal_cursor.execute('''DELETE FROM Locks WHERE productID=2''')
+    #personnal_cursor.execute("INSERT into productsInventory(productID, inventory) VALUES (?,?)", (2, 20))
+    #conn.commit()
 
 

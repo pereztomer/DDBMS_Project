@@ -109,13 +109,15 @@ def productProcessing(file_path, query, transactionID, wantedProductID, cursor_s
     if lockCursor.fetchone()[0] == 0:
         productLockType = 'noLockExists'
         # now we are taking a writing lock without checking availability in inventory
-        string_query = f"INSERT INTO Locks(transactionID, ProductID,lockType) VALUES ({transactionID}, {wantedProductID},'Write')"
+        string_query = '''INSERT INTO Locks(transactionID, productID, lockType) VALUES (?,?,?)
+                            ''', (transactionID, wantedProductID, 'Write')
+        cursor_site.execute('''INSERT INTO Log(timestamp,relation, transactionID, productID, action, record) VALUES (?,?,?,?,?,?)
+                            ''', (current_date(), 'Locks', transactionID, wantedProductID, 'Write', 'papa'))
 
-        cursor_site.execute("INSERT INTO Log(timestamp, transactionID, productID, action, record) VALUES (?,?,?,?,?)",
-                            (current_date(), 'Locks', transactionID, wantedProductID, 'Write', string_query))
         ## TAKING WRITE LOCK ###
-        cursor_site.execute("INSERT INTO Locks(transactionID, ProductID,lockType) VALUES (?,?,?)", transactionID,wantedProductID, 'Write')
+        cursor_site.execute(string_query)
         conn_site.commit()
+        exit()
 
     else:
         # we don't know which type of lock it is
