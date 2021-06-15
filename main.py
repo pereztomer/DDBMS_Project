@@ -1,5 +1,6 @@
 import pyodbc
 import constants
+import manege_transactions
 
 def connect_to_db(username):
     server = 'technionddscourse.database.windows.net'
@@ -94,6 +95,7 @@ def update_inventory(transactionID):
 
 
 if __name__ == '__main__':
-    update_inventory('moshe')
+    manege_transactions.manege_transactions(100)
+
 
 

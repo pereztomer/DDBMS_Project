@@ -1,5 +1,6 @@
 import glob
 import findspark
+import datetime
 from pyspark.sql import SparkSession
 import pyodbc
 import os
@@ -36,30 +37,61 @@ def manege_transactions(T):
         else:
             transactionID = os.path.splitext(os.path.basename(file_path))[0]
             query = spark.read.format("csv").option("header", "true").load(file_path)
+            wantedProductID = list(query.select('productID').toPandas()['productID'])
+            wantedProductID_str = '(' + ','.join(str(e) for e in wantedProductID) + ')'
             # relevant categories of query
             categories = list(query.select('categoryID').toPandas()['categoryID'])
             categories = '(' + ','.join(str(e) for e in categories) + ')'
             conn = connect_to_db('dbteam')
             cursor = conn.cursor()
-            cursor.execute(
-                'select distinct siteName, categoryID from CategoriesToSites where categoryID in' + categories)
+            site_to_rollback = []
+            cursor.execute('select distinct siteName, categoryID from CategoriesToSites where categoryID in'+categories)
             site_flag = True
+            rollback_flag = False
             for row in cursor:
+                site_to_rollback.append(row)
                 if not site_flag:
-                    # rollback!
-                    pass
-                site_flag = siteProcessing(row, query, file_path, transactionID, calc_time_left)
+                    rollback_flag = True
+                    break
+                #site_flag = siteProcessing(row, query, file_path, transactionID, calc_time_left)
 
-            # query processing or inside site processing
-            # rollback
-        # checking if all sites were successfully if not rollback
+            rollback_flag = True
+            if rollback_flag:
+                # We do not need to obtain the locks again because we kept them
+                # We  do not need lock for log table
+                for site, categoryID in site_to_rollback:
+                    rollback_conn = connect_to_db(site)
+                    rollback_cursor = rollback_conn.cursor()
+                    # str_qr = "select * from Log  where Log.transactionID = " + transactionID
+                    string_query = "UPDATE ProductsInventory SET inventory = inventory - amount WHERE ProductID=4"
+                    ts = datetime.datetime.now()
+                    rollback_cursor.execute("INSERT INTO Log(timestamp, relation, transactionID, productID, action, record) VALUES (?,?,?,?,?,?)", (ts, 'ProductsInventory', transactionID, wantedProductID[0], 'update', string_query))
+                    rollback_conn.commit()
+                    rollback_cursor.execute("select * from Log where transactionID = ? AND Log.productID in ? AND Log.action = ? ", transactionID, wantedProductID_str,'update' )
+                    # rollback_cursor.execute("DELETE FROM Log WHERE rowID = 785")
+                    # rollback_conn.commit()
+                    for rollback_row in rollback_cursor:
+                        rollback_query = rollback_row[6]
+                        rollback_query = rollback_query.replace('-', '+')
+                        rollback_cursor.execute(rollback_query)
+
+
+
+
+
+            for row in cursor:
+                pass
+
+
+        #### now we have all th relevant locks for a transaction!
+        ##### REALEASE WRITE LOCK ####
+        # cursor_site.execute("DELETE FROM Locks where Locks.transactionID == transactionID AND Locks.ProductID==ProductID")
 
 
 def siteProcessing(row, query, file_path, transactionID, calc_time_left):
     conn_site = connect_to_db(row[0])
     wantedProductID = query.filter(query.categoryID == str(row[1])).select('productID')
     wantedProductID = list(wantedProductID.toPandas()['productID'])
-    wantedProductID = '(' + ','.join(str(e) for e in wantedProductID) + ')'
     cursor_site = conn_site.cursor()
     for prodID in wantedProductID:
         if not productProcessing(file_path, query, transactionID, prodID, cursor_site, calc_time_left):
@@ -155,13 +187,11 @@ def productProcessing(file_path, query, transactionID, wantedProductID, cursor_s
     ## UPDATING INVENTORY
     if calc_time_left() <= 0:
         return False
+    # string_query = ("UPDATE ProductsInventory SET inventory = ? WHERE ProductID=?", Inventory - amount, wantedProductID)
     string_query = "UPDATE ProductsInventory SET inventory = Inventory - amount WHERE ProductID=wantedProductID"
     cursor_site.execute("INSERT INTO Log(timestamp, transactionID, productID, action, record) VALUES (?,?,?,?,?)",
                         (current_date, 'ProductsInventory', transactionID, wantedProductID, 'update', string_query))
     cursor_site.execute(string_query)
-
-    ##### REALEASE WRITE LOCK ####
-    cursor_site.execute("DELETE FROM Locks where Locks.transactionID == transactionID AND Locks.ProductID==ProductID")
     return True
 
 
