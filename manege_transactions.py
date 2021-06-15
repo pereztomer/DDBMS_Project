@@ -7,6 +7,7 @@ import os
 import time
 from pyspark.sql.functions import asc, current_date
 from main import connect_to_db
+import time
 
 
 def init_spark(app_name: str):
@@ -110,13 +111,12 @@ def productProcessing(file_path, query, transactionID, wantedProductID, cursor_s
         productLockType = 'noLockExists'
         # now we are taking a writing lock without checking availability in inventory
 
-        string_query = f"insert into Locks(transactionID, ProductID,lockType) VALUES('{transactionID}',{wantedProductID},'{'Write'}')"
-        #cursor_site.execute(f"INSERT INTO Log(relation, transactionID, productID, action, record) VALUES ({datetime.datetime.now()},'{'Locks'}','{transactionID}',{wantedProductID},'{'Write'}',{string_query})")
-        # problem with timestamp, query, action
-        cursor_site.execute(f"INSERT INTO Log(relation, transactionID,productID) VALUES ('{'Locks'}','{transactionID}',{wantedProductID})")
+        string_query_for_log = f"insert into Locks(transactionID,ProductID,lockType) VALUES(''{transactionID}'',{wantedProductID},''{'Write'}'')"
+        string_query_executable = f"insert into Locks(transactionID,ProductID,lockType) VALUES('{transactionID}',{wantedProductID},'{'Write'}')"
+        cursor_site.execute(f"INSERT INTO Log(timestamp ,relation, transactionID,productID,action,record) VALUES ('{time.strftime('%Y-%m-%d %H:%M:%S')}','{'Locks'}','{transactionID}',{wantedProductID},'{'insert'}','{string_query_for_log}')")
 
-        ## TAKING WRITE LOCK ###
-        cursor_site.execute(string_query)
+        # TAKING WRITE LOCK ###
+        cursor_site.execute(string_query_executable)
         conn_site.commit()
         print("Got here")
         exit()
