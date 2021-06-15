@@ -17,7 +17,7 @@ def connect_to_db(username):
 
 
 def create_tables():
-    conn = connect_to_db()
+    conn = connect_to_db("rubensasson")
     cursor = conn.cursor()
     cursor.execute('''
                       Create table ProductsInventory(
@@ -38,7 +38,7 @@ def create_tables():
                           rowID int identity(1,1) primary key,
                           timestamp datetime,
                           relation varchar(20),
-                          transactionID integer,
+                          transactionID varchar(30),
                           productID integer,
                           action varchar(10),
                           record varchar(2500),
@@ -48,26 +48,27 @@ def create_tables():
                       );''')
     cursor.execute('''
                       Create table Locks(
-                          transactionID integer,
+                          transactionID varchar(30),
                           productID integer,
                           lockType varchar(10),
-                          foreign key(transactionID) references ProductsOrdered(transactionID),
-                          foreign key(productID) references ProductsInventory(productID)
+                          foreign key(transactionID,productID) references ProductsOrdered(transactionID,productID),
+                          primary key(transactionID,productID,lockType)
                       );''')
 
     conn.commit()
 
 
 def functionDrop():
-    conn = connect_to_db()
+    conn = connect_to_db("rubensasson")
     cursor = conn.cursor()
     cursor.execute('''
                  DROP TABLE Log;
                 ''')
+    conn.commit()
     cursor.execute('''
                  DROP TABLE ProductsOrdered;
                 ''')
-
+    conn.commit()
     cursor.execute('''
                  DROP TABLE ProductsInventory;
                 ''')
@@ -95,7 +96,11 @@ def update_inventory(transactionID):
 
 
 if __name__ == '__main__':
-    manege_transactions.manege_transactions(100)
 
+    manege_transactions.manege_transactions(100)
+    # conn = connect_to_db("rubensasson")
+    # personnal_cursor = conn.cursor()
+    # personnal_cursor.execute("INSERT into productsInventory(productID, inventory) VALUES (?,?)", (2, 20))
+    # conn.commit()
 
 
