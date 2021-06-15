@@ -65,15 +65,17 @@ def manege_transactions(T):
                     # str_qr = "select * from Log  where Log.transactionID = " + transactionID
                     string_query = "UPDATE ProductsInventory SET inventory = inventory - amount WHERE ProductID=4"
                     ts = datetime.datetime.now()
-                    rollback_cursor.execute("INSERT INTO Log(timestamp, relation, transactionID, productID, action, record) VALUES (?,?,?,?,?,?)", (ts, 'ProductsInventory', transactionID, wantedProductID[0], 'update', string_query))
-                    rollback_conn.commit()
-                    rollback_cursor.execute("select * from Log where transactionID = ? AND Log.productID in ? AND Log.action = ? ", transactionID, wantedProductID_str,'update' )
+                    #rollback_cursor.execute("INSERT INTO Log(timestamp, relation, transactionID, productID, action, record) VALUES (?,?,?,?,?,?)", (ts, 'ProductsInventory', transactionID, wantedProductID[0], 'update', string_query))
+                    #rollback_conn.commit()
+                    rollback_cursor.execute("select * from Log where transactionID = ? AND Log.productID in %s",(transactionID, wantedProductID) ) # AND Log.action = ? ", (transactionID, wantedProductID_str, 'update'))
                     # rollback_cursor.execute("DELETE FROM Log WHERE rowID = 785")
                     # rollback_conn.commit()
                     for rollback_row in rollback_cursor:
                         rollback_query = rollback_row[6]
                         rollback_query = rollback_query.replace('-', '+')
                         rollback_cursor.execute(rollback_query)
+                        rollback_conn.commit()
+
 
 
 
