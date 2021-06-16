@@ -131,7 +131,7 @@ def productProcessing(file_path, query, transactionID, wantedProductID, wantedAm
         lockCursor_not_only_count = cursor_site.execute("select distinct lockType from Locks where locks.productID =" + str(wantedProductID))
         productLockType = lockCursor_not_only_count.fetchone()[0]
 
-    while productLockType == 'Write':
+    while productLockType.lower() == 'write':
         #IF WE ENTER HERE WE KNOW THAT THE WRITE LOCK ON THE PRODUCT IS SOMEONE ELSE's.#
         #IF IT WAS OUR WRITE LOCKS WE WOULD HAVE : productLockType = 'noLockExists'#
         if calc_time_left() <= 0:
@@ -157,7 +157,7 @@ def productProcessing(file_path, query, transactionID, wantedProductID, wantedAm
 
     ## HERE WER ARE SURE THAT WE HAVE READ OR NONE LockTpe ON THE SPECIFIC ProductID ####
     #####################################################
-    if productLockType == 'Read':
+    if productLockType.lower() == 'read':
         string_query_for_log = f"insert into Locks(transactionID,ProductID,lockType) VALUES(''{transactionID}'',{wantedProductID},''{'Read'}'')"
         string_query_executable = f"insert into Locks(transactionID,ProductID,lockType) VALUES('{transactionID}',{wantedProductID},'{'Read'}')"
         cursor_site.execute(
@@ -178,7 +178,7 @@ def productProcessing(file_path, query, transactionID, wantedProductID, wantedAm
     # requesting writing lock for the whole website
     # we already know that out read lock is inside the lock table
     #############################################
-    if productLockType == 'Read':
+    if productLockType.lower() == 'read':
         number_of_readLocks_cursor = cursor_site.execute("select count(*) from Locks where locks.productID =" + str(wantedProductID))
         number_of_readLocks_on_wantedProduct = number_of_readLocks_cursor.fetchone()[0]
         while number_of_readLocks_on_wantedProduct > 1:
