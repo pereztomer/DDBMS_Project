@@ -18,11 +18,17 @@ def connect_to_db(username):
     return conn
 
 
-def refill_inventory(cursor, transactionID, T=260):
-    for i in range (1, constants.Y+1):
+def refill_inventory(cursor, transactionID, T=10):
+    initial_time = time.time()
+    for i in range(1, constants.Y + 1):
         Y = str(i)
         lock_table = cursor.execute('Select count (distinct LockType) from Locks where productID =' + str(i))
-        number_of_locks = cursor.fetchone()[0]
+        number_of_locks = lock_table.fetchone()[0]
+
+        while number_of_locks != 0 and initial_time - time.time() > T / constants.Y:
+            lock_table = cursor.execute('Select count (distinct LockType) from Locks where productID =' + str(i))
+            number_of_locks = lock_table.fetchone()[0]
+
         if number_of_locks == 0:
             log_record_write_lock = f"insert into Locks(transactionID,ProductID,lockType) VALUES(''{transactionID}'',{Y},''{'Write'}'')"
             '''Calling the update_log Function to inform we gona take lock'''
@@ -38,6 +44,8 @@ def refill_inventory(cursor, transactionID, T=260):
             cursor.execute(inserting_query)
             cursor.execute(
                 f"INSERT INTO Log(timestamp ,relation, transactionID,productID,action,record) VALUES ('{time.strftime('%Y-%m-%d %H:%M:%S')}','{'productsInventory'}','{transactionID}',{i},'{'insert'}','{inserting_query}')")
+        else:
+            print(f"Your request to refill product {i} could not be completed")
     complementary_inventory = f"update productsInventory set Inventory = {constants.COMPLEMENTARY_AMOUNT} where productID = 1"
     cursor.execute(complementary_inventory)
 
@@ -74,8 +82,9 @@ def update_inventory(transactionID):
         complementary_inventory = f"update productsInventory set Inventory = {constants.COMPLEMENTARY_AMOUNT} where productID = 1"
         cursor.execute(complementary_inventory)
         conn.commit()
+    else:
+        refill_inventory(cursor, transactionID)
     '''Refill our Inventory'''
-    refill_inventory(cursor, transactionID)
     conn.commit()
     release_locks = f"DELETE FROM Locks where Locks.transactionID = '{transactionID}'"
     cursor.execute(release_locks)
@@ -84,4 +93,3 @@ def update_inventory(transactionID):
 
 if __name__ == '__main__':
     update_inventory("test")
-
