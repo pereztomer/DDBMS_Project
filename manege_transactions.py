@@ -51,6 +51,7 @@ def manege_transactions(T):
             rollback_flag = False
             for row in cursor:
                 site_to_rollback.append(row)
+                
                 if not site_flag:
                     rollback_flag = True
                     break
@@ -72,8 +73,12 @@ def manege_transactions(T):
             # we still have all the relevant locks for a transaction!
             # Release write locks for a query
 
-
-            # cursor_site.execute("DELETE FROM Locks where Locks.transactionID == transactionID AND Locks.ProductID==ProductID")
+            for site, categoryID in site_to_rollback:
+                delete_locks_conn = connect_to_db(site)
+                cursor_delete_locks = delete_locks_conn.cursor()
+                test_query = f"DELETE FROM Locks where Locks.transactionID = '{transactionID}'"
+                cursor_delete_locks.execute(test_query)
+                delete_locks_conn.commit()
 
 
 def siteProcessing(row, query, file_path, transactionID, calc_time_left):
@@ -83,10 +88,6 @@ def siteProcessing(row, query, file_path, transactionID, calc_time_left):
     wantedProductID = list(wantedProductID.toPandas()['productID'])
     wantedAmount = list(wantedAmount.toPandas()['amount'])
     cursor_site = conn_site.cursor()
-    '''for prodID in wantedProductID:
-        if not productProcessing(file_path, query, transactionID, prodID, cursor_site,conn_site, calc_time_left):
-            # rollback
-            return False'''
     for i in range(len(wantedAmount)):
         prodID = wantedProductID[i]
         amount = wantedAmount[i]
