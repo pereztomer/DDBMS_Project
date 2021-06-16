@@ -19,7 +19,6 @@ def connect_to_db(username):
 
 
 def refill_inventory(cursor, transactionID, T=260):
-    i = 1
     for i in range (1, constants.Y+1):
         Y = str(i)
         lock_table = cursor.execute('Select count (distinct LockType) from Locks where productID =' + str(i))
