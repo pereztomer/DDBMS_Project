@@ -60,25 +60,7 @@ def create_tables():
     conn.commit()
 
 
-def functionDrop():
-    conn = connect_to_db("rubensasson")
-    cursor = conn.cursor()
-    #cursor.execute('''
-    #                     DROP TABLE Locks;
-    #                   ''')
-    #conn.commit()
-    #cursor.execute('''
-    #             DROP TABLE Log;
-    #            ''')
-    #conn.commit()
-    cursor.execute('''
-                 DROP TABLE ProductsOrdered;
-                ''')
-    conn.commit()
-    cursor.execute('''
-                 DROP TABLE ProductsInventory;
-                ''')
-    conn.commit()
+
 
 
 
