@@ -173,15 +173,6 @@ def productProcessing(file_path, query, transactionID, wantedProductID, wantedAm
     if productInventoryValue < int(wantedAmount):
         print(f"Query {file_path} can not be completed")
         return False
-    '''
-    for user_row in cursor_site:
-    product_amount = query.filter(query.productID == int(user_row[1])).select('amount')
-    product_amount_lst = list(product_amount.toPandas()['amount'])
-    product_amount = sum(product_amount_lst)
-    if user_row[1] < product_amount:
-        print(f"Query {file_path} can not be completed")
-        return False
-    '''
 
     #############################################
     # requesting writing lock for the whole website
@@ -191,8 +182,8 @@ def productProcessing(file_path, query, transactionID, wantedProductID, wantedAm
         number_of_readLocks_cursor = cursor_site.execute("select count(*) from Locks where locks.productID =" + str(wantedProductID))
         number_of_readLocks_on_wantedProduct = number_of_readLocks_cursor.fetchone()[0]
         while number_of_readLocks_on_wantedProduct > 1:
-            calc_time_left()
-            if calc_time_left() <= 0:
+            val = calc_time_left()
+            if val <= 0:
                 return False
             ##know we have 4 read locks (3 + our read lock)##
             ##we are going to delete the 3 locks that are not our lock just to see if we are going out of the while##
@@ -219,7 +210,8 @@ def productProcessing(file_path, query, transactionID, wantedProductID, wantedAm
     ### NEED TO DELETE OUR READ LOCK HERE ###
 
     ## UPDATING INVENTORY
-    if calc_time_left() <= 0:
+    val = calc_time_left()
+    if val <= 0:
         return False
     # string_query = ("UPDATE ProductsInventory SET inventory = ? WHERE ProductID=?", Inventory - amount, wantedProductID)
     string_query = "UPDATE ProductsInventory SET inventory = Inventory - amount WHERE ProductID=wantedProductID"
@@ -232,4 +224,4 @@ def productProcessing(file_path, query, transactionID, wantedProductID, wantedAm
 def func_cal_time_left(T, initial_time):
     def calc_time_left():
         return T - (time.time() - initial_time)
-    return calc_time_left()
+    return calc_time_left

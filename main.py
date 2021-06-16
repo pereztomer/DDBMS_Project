@@ -106,14 +106,16 @@ if __name__ == '__main__':
     #functionDrop()
     #create_tables()
 
-    manege_transactions.manege_transactions(100)
+    manege_transactions.manege_transactions(100_000)
 
     ##DELETE##
 
-    #conn = connect_to_db("rubensasson")
-    #personnal_cursor = conn.cursor()
-    #personnal_cursor.execute('''DELETE FROM Locks WHERE productID=2 AND transactionID='Bonk_11' ''')
-    #personnal_cursor.execute('''DELETE FROM Log WHERE productID=2 AND transactionID='Bonk_11' ''')
+    # conn = connect_to_db("rubensasson")
+    # personnal_cursor = conn.cursor()
+    # personnal_cursor.execute('''DELETE FROM Locks WHERE productID=2 AND transactionID='Bonk_11' ''')
+    # personnal_cursor.execute('''DELETE FROM Log WHERE productID=2 AND transactionID='Bonk_11' ''')
+    # conn.commit()
+
 
     ##INSERT###
 
@@ -125,6 +127,6 @@ if __name__ == '__main__':
     #personnal_cursor.execute("INSERT into Locks(transactionID, productID, lockType) VALUES(?,?,?)",
                              #('AAA_7', 2, 'Read'))
 
-    #conn.commit()
+
 
 
