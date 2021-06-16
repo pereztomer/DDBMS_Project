@@ -79,17 +79,9 @@ def manege_transactions(T):
                         rollback_cursor.execute(rollback_query)
                         rollback_conn.commit()
 
-
-
-
-
-
-            for row in cursor:
-                pass
-
-
         #### now we have all th relevant locks for a transaction!
         ##### REALEASE WRITE LOCK ####
+
         # cursor_site.execute("DELETE FROM Locks where Locks.transactionID == transactionID AND Locks.ProductID==ProductID")
 
 
@@ -115,6 +107,7 @@ def siteProcessing(row, query, file_path, transactionID, calc_time_left):
 
 def productProcessing(file_path, query, transactionID, wantedProductID, wantedAmount, cursor_site, conn_site, calc_time_left):
     lockCursor = cursor_site.execute("select count(distinct lockType) from Locks where locks.productID =" + str(wantedProductID))
+    # No locks exist
     if lockCursor.fetchone()[0] == 0:
         productLockType = 'noLockExists'
         # now we are taking a writing lock without checking availability in inventory
@@ -128,10 +121,16 @@ def productProcessing(file_path, query, transactionID, wantedProductID, wantedAm
         conn_site.commit()
 
     else:
+        # There is some lock - read or write
         lockCursor_not_only_count = cursor_site.execute("select distinct lockType from Locks where locks.productID =" + str(wantedProductID))
         productLockType = lockCursor_not_only_count.fetchone()[0]
 
+    counter = 0
     while productLockType.lower() == 'write':
+        if counter == 3:
+            lockCursor.execute("Delete from Locks where locks.productID =" + str(wantedProductID))
+            conn_site.commit()
+        counter+=1
         #IF WE ENTER HERE WE KNOW THAT THE WRITE LOCK ON THE PRODUCT IS SOMEONE ELSE's.#
         #IF IT WAS OUR WRITE LOCKS WE WOULD HAVE : productLockType = 'noLockExists'#
         if calc_time_left() <= 0:
@@ -174,10 +173,8 @@ def productProcessing(file_path, query, transactionID, wantedProductID, wantedAm
         print(f"Query {file_path} can not be completed")
         return False
 
-    #############################################
     # requesting writing lock for the whole website
-    # we already know that out read lock is inside the lock table
-    #############################################
+    # we already know that our read lock is inside the lock table
     if productLockType.lower() == 'read':
         number_of_readLocks_cursor = cursor_site.execute("select count(*) from Locks where locks.productID =" + str(wantedProductID))
         number_of_readLocks_on_wantedProduct = number_of_readLocks_cursor.fetchone()[0]
@@ -187,10 +184,10 @@ def productProcessing(file_path, query, transactionID, wantedProductID, wantedAm
                 return False
             ##know we have 4 read locks (3 + our read lock)##
             ##we are going to delete the 3 locks that are not our lock just to see if we are going out of the while##
-            cursor_site.execute('''DELETE FROM Locks WHERE transactionID='AAA_7' ''')
-            cursor_site.execute('''DELETE FROM Locks WHERE transactionID='ABC_3' ''')
-            cursor_site.execute('''DELETE FROM Locks WHERE transactionID='RRR_8' ''')
-            cursor_site.commit()
+            # cursor_site.execute('''DELETE FROM Locks WHERE transactionID='AAA_7' ''')
+            # cursor_site.execute('''DELETE FROM Locks WHERE transactionID='ABC_3' ''')
+            # cursor_site.execute('''DELETE FROM Locks WHERE transactionID='RRR_8' ''')
+            # cursor_site.commit()
             ##DON'T FORGET THE DELETE LINE 200-203##
             number_of_readLocks_cursor = cursor_site.execute("select count(*) from Locks where locks.productID =" + str(wantedProductID))
             number_of_readLocks_on_wantedProduct = number_of_readLocks_cursor.fetchone()[0]
