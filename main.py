@@ -105,12 +105,26 @@ def update_inventory(transactionID):
 if __name__ == '__main__':
     #functionDrop()
     #create_tables()
+
     manege_transactions.manege_transactions(100)
-    conn = connect_to_db("rubensasson")
-    personnal_cursor = conn.cursor()
-    personnal_cursor.execute('''DELETE FROM Locks WHERE productID=2''')
-    personnal_cursor.execute('''DELETE FROM Log WHERE productID=2''')
+
+    ##DELETE##
+
+    #conn = connect_to_db("rubensasson")
+    #personnal_cursor = conn.cursor()
+    #personnal_cursor.execute('''DELETE FROM Locks WHERE productID=2 AND transactionID='Bonk_11' ''')
+    #personnal_cursor.execute('''DELETE FROM Log WHERE productID=2 AND transactionID='Bonk_11' ''')
+
+    ##INSERT###
+
     #personnal_cursor.execute("INSERT into productsInventory(productID, inventory) VALUES (?,?)", (2, 20))
-    conn.commit()
+    #personnal_cursor.execute("INSERT into Locks(transactionID, productID, lockType) VALUES(?,?,?)",
+                            # ('ABC_3', 2, 'Read'))
+    #personnal_cursor.execute("INSERT into Locks(transactionID, productID, lockType) VALUES(?,?,?)",
+                            # ('RRR_8', 2, 'Read'))
+    #personnal_cursor.execute("INSERT into Locks(transactionID, productID, lockType) VALUES(?,?,?)",
+                             #('AAA_7', 2, 'Read'))
+
+    #conn.commit()
 
 

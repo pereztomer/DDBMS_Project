@@ -96,16 +96,24 @@ def manege_transactions(T):
 def siteProcessing(row, query, file_path, transactionID, calc_time_left):
     conn_site = connect_to_db(row[0])
     wantedProductID = query.filter(query.categoryID == str(row[1])).select('productID')
+    wantedAmount = query.filter(query.categoryID == str(row[1])).select('amount')
     wantedProductID = list(wantedProductID.toPandas()['productID'])
+    wantedAmount = list(wantedAmount.toPandas()['amount'])
     cursor_site = conn_site.cursor()
-    for prodID in wantedProductID:
+    '''for prodID in wantedProductID:
         if not productProcessing(file_path, query, transactionID, prodID, cursor_site,conn_site, calc_time_left):
+            # rollback
+            return False'''
+    for i in range(len(wantedAmount)):
+        prodID = wantedProductID[i]
+        amount = wantedAmount[i]
+        if not productProcessing(file_path, query, transactionID, prodID, amount, cursor_site, conn_site, calc_time_left):
             # rollback
             return False
     return True
 
 
-def productProcessing(file_path, query, transactionID, wantedProductID, cursor_site, conn_site, calc_time_left):
+def productProcessing(file_path, query, transactionID, wantedProductID, wantedAmount, cursor_site, conn_site, calc_time_left):
     lockCursor = cursor_site.execute("select count(distinct lockType) from Locks where locks.productID =" + str(wantedProductID))
     if lockCursor.fetchone()[0] == 0:
         productLockType = 'noLockExists'
@@ -118,79 +126,97 @@ def productProcessing(file_path, query, transactionID, wantedProductID, cursor_s
         # TAKING WRITE LOCK ###
         cursor_site.execute(string_query_executable)
         conn_site.commit()
-        print("Got here")
-        exit()
 
     else:
-        # we don't know which type of lock it is
-        lockTypeTable = list(lockCursor.select('lockType').toPandas()['lockType'])
-        productLockType = '(' + ','.join(str(e) for e in lockTypeTable) + ')'
+        lockCursor_not_only_count = cursor_site.execute("select distinct lockType from Locks where locks.productID =" + str(wantedProductID))
+        productLockType = lockCursor_not_only_count.fetchone()[0]
 
-    while productLockType == 'write':
+    while productLockType == 'Write':
+        #IF WE ENTER HERE WE KNOW THAT THE WRITE LOCK ON THE PRODUCT IS SOMEONE ELSE's.#
+        #IF IT WAS OUR WRITE LOCKS WE WOULD HAVE : productLockType = 'noLockExists'#
         if calc_time_left() <= 0:
             return False
-        lockCursor = cursor_site.execute('select distinct lockType from Locks where lock.productID = wantedProductID')
-        if lockCursor.count() == 0:
+        lockCursor = cursor_site.execute("select count(distinct lockType) from Locks where locks.productID =" + str(wantedProductID))
+        if lockCursor.fetchone()[0] == 0:
             productLockType = 'noLockExists'
-            string_query = str(
-                ("INSERT INTO Locks(transactionID, ProductID,lockType) VALUES (?,?,?)", transactionID, wantedProductID,
-                 'Write'))
+            # now we are taking a writing lock without checking availability in inventory
+
+            string_query_for_log = f"insert into Locks(transactionID,ProductID,lockType) VALUES(''{transactionID}'',{wantedProductID},''{'Write'}'')"
+            string_query_executable = f"insert into Locks(transactionID,ProductID,lockType) VALUES('{transactionID}',{wantedProductID},'{'Write'}')"
             cursor_site.execute(
-                "INSERT INTO Log(timestamp, transactionID, productID, action, record) VALUES (?,?,?,?,?)",
-                (current_date(), 'Locks', transactionID, wantedProductID, 'Write', string_query))
-            ## TAKING WRITE LOCK ###
-            cursor_site.execute("INSERT INTO Locks(transactionID, ProductID,lockType) VALUES (?,?,?)", transactionID,
-                                wantedProductID, 'Write')
+                f"INSERT INTO Log(timestamp ,relation, transactionID,productID,action,record) VALUES ('{time.strftime('%Y-%m-%d %H:%M:%S')}','{'Locks'}','{transactionID}',{wantedProductID},'{'insert'}','{string_query_for_log}')")
+
+            # TAKING WRITE LOCK ###
+            cursor_site.execute(string_query_executable)
+            conn_site.commit()
+
         else:
-            productLockType = list(lockCursor.select('lockType').toPandas()['lockType'])[0]
+            lockCursor_not_only_count = cursor_site.execute("select distinct lockType from Locks where locks.productID =" + str(wantedProductID))
+            productLockType = lockCursor_not_only_count.fetchone()[0]
+
 
     ## HERE WER ARE SURE THAT WE HAVE READ OR NONE LockTpe ON THE SPECIFIC ProductID ####
     #####################################################
-    if productLockType == 'read':
-        string_query = str(
-            ("INSERT INTO Locks(transactionID, ProductID,lockType) VALUES (?,?,?)", transactionID, wantedProductID,
-             'Read'))
-        # insert into LOG
-        cursor_site.execute("INSERT INTO Log(timestamp, transactionID, productID, action, record) VALUES (?,?,?,?,?)",
-                            (current_date, 'ProductsOrdered', transactionID, wantedProductID, 'Read', string_query))
-        # TAKING READING LOCK
-        cursor_site.execute("INSERT INTO Locks(transactionID, ProductID,lockType) VALUES (?,?,?)", transactionID,
-                            wantedProductID, 'Read')
+    if productLockType == 'Read':
+        string_query_for_log = f"insert into Locks(transactionID,ProductID,lockType) VALUES(''{transactionID}'',{wantedProductID},''{'Read'}'')"
+        string_query_executable = f"insert into Locks(transactionID,ProductID,lockType) VALUES('{transactionID}',{wantedProductID},'{'Read'}')"
+        cursor_site.execute(
+            f"INSERT INTO Log(timestamp ,relation, transactionID,productID,action,record) VALUES ('{time.strftime('%Y-%m-%d %H:%M:%S')}','{'Locks'}','{transactionID}',{wantedProductID},'{'insert'}','{string_query_for_log}')")
+        cursor_site.execute(string_query_executable)
+        conn_site.commit()
 
     # CHECKING SITE INVENTORY
-    reading_site_query = 'select productID,inventory from productsInventory where productID in' + wantedProductID
+    reading_site_query = "select productID,inventory from productsInventory where productID=" + str(wantedProductID)
 
     cursor_site.execute(reading_site_query)
-
+    productInventoryValue = cursor_site.fetchone()[1]
+    if productInventoryValue < int(wantedAmount):
+        print(f"Query {file_path} can not be completed")
+        return False
+    '''
     for user_row in cursor_site:
-        product_amount = query.filter(query.productID == int(user_row[1])).select('amount')
-        product_amount_lst = list(product_amount.toPandas()['amount'])
-        product_amount = sum(product_amount_lst)
-        if user_row[1] < product_amount:
-            print(f"Query {file_path} can not be completed")
-            return False
+    product_amount = query.filter(query.productID == int(user_row[1])).select('amount')
+    product_amount_lst = list(product_amount.toPandas()['amount'])
+    product_amount = sum(product_amount_lst)
+    if user_row[1] < product_amount:
+        print(f"Query {file_path} can not be completed")
+        return False
+    '''
 
     #############################################
     # requesting writing lock for the whole website
     # we already know that out read lock is inside the lock table
     #############################################
-    if productLockType == 'read':
-        number_of_readLocks = cursor_site.execute(
-            'select * from Locks where lock.productID = wantedProductID')
-        while number_of_readLocks.count() > 1:
+    if productLockType == 'Read':
+        number_of_readLocks_cursor = cursor_site.execute("select count(*) from Locks where locks.productID =" + str(wantedProductID))
+        number_of_readLocks_on_wantedProduct = number_of_readLocks_cursor.fetchone()[0]
+        while number_of_readLocks_on_wantedProduct > 1:
+            calc_time_left()
             if calc_time_left() <= 0:
                 return False
-            number_of_readLocks = cursor_site.execute(
-                'select * from Locks where lock.productID = wantedProductID')
+            ##know we have 4 read locks (3 + our read lock)##
+            ##we are going to delete the 3 locks that are not our lock just to see if we are going out of the while##
+            cursor_site.execute('''DELETE FROM Locks WHERE transactionID='AAA_7' ''')
+            cursor_site.execute('''DELETE FROM Locks WHERE transactionID='ABC_3' ''')
+            cursor_site.execute('''DELETE FROM Locks WHERE transactionID='RRR_8' ''')
+            cursor_site.commit()
+            ##DON'T FORGET THE DELETE LINE 200-203##
+            number_of_readLocks_cursor = cursor_site.execute("select count(*) from Locks where locks.productID =" + str(wantedProductID))
+            number_of_readLocks_on_wantedProduct = number_of_readLocks_cursor.fetchone()[0]
+
     ## WE ARE THE ONLY ONES WITH READ LOCK ON THE PRODUCT ###
     ## ASKING FOR WRITING LOCK##
     ## TAKING READING LOCK
     ## insert into LOG
-    string_query = "UPDATE Locks SET LockType= 'Write' WHERE ProductID=wantedProductID"
-    cursor_site.execute("INSERT INTO Log(timestamp, transactionID, productID, action, record) VALUES (?,?,?,?,?)",
-                       (current_date, 'Locks', transactionID, wantedProductID, 'update', string_query))
-    ## Updating to write lock ###
-    cursor_site.execute(string_query)
+    string_query_for_log = f"insert into Locks(transactionID,ProductID,lockType) VALUES(''{transactionID}'',{wantedProductID},''{'Write'}'')"
+    string_query_executable = f"insert into Locks(transactionID,ProductID,lockType) VALUES('{transactionID}',{wantedProductID},'{'Write'}')"
+    cursor_site.execute(
+        f"INSERT INTO Log(timestamp ,relation, transactionID,productID,action,record) VALUES ('{time.strftime('%Y-%m-%d %H:%M:%S')}','{'Locks'}','{transactionID}',{wantedProductID},'{'insert'}','{string_query_for_log}')")
+
+    # TAKING WRITE LOCK ###
+    cursor_site.execute(string_query_executable)
+    conn_site.commit()
+    ### NEED TO DELETE OUR READ LOCK HERE ###
 
     ## UPDATING INVENTORY
     if calc_time_left() <= 0:
