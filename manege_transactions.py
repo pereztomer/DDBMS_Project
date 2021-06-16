@@ -58,31 +58,22 @@ def manege_transactions(T):
 
             if rollback_flag:
                 # We do not need to obtain the locks again because we kept them
-                # We  do not need lock for log table
+                # We  do not need a lock for log table
                 for site, categoryID in site_to_rollback:
                     rollback_conn = connect_to_db(site)
                     rollback_cursor = rollback_conn.cursor()
-                    # str_qr = "select * from Log  where Log.transactionID = " + transactionID
-                    string_query = "UPDATE ProductsInventory SET inventory = inventory-10 WHERE ProductID=4"
-                    ts = datetime.datetime.now()
-                    #rollback_cursor.execute(string_query)
-                    #rollback_cursor.execute("INSERT INTO Log(timestamp, relation, transactionID, productID, action, record) VALUES (?,?,?,?,?,?)", (ts, 'ProductsInventory', transactionID, wantedProductID[0], 'update', string_query))
-                    #rollback_conn.commit()
-                    rollback_cursor.execute("select * from Log where Log.transactionID = '"+transactionID + "' AND Log.productID in "+wantedProductID_str +" AND Log.action = 'update' ")
-                    # rollback_cursor.execute("DELETE FROM Log WHERE rowID = 786")
-                    # rollback_cursor.execute("DELETE FROM Log WHERE rowID = 787")
-                    # rollback_cursor.execute("DELETE FROM Log WHERE rowID = 788")
-                    # rollback_cursor.execute("DELETE FROM Log WHERE rowID = 789")
+                    rollback_cursor.execute(f"select * from Log where transactionID = '{transactionID}' AND productID in {wantedProductID_str} AND action = '{'update'}'")
                     for rollback_row in rollback_cursor:
                         rollback_query = rollback_row[6]
                         rollback_query = rollback_query.replace('-', '+')
                         rollback_cursor.execute(rollback_query)
                         rollback_conn.commit()
 
-        #### now we have all th relevant locks for a transaction!
-        ##### REALEASE WRITE LOCK ####
+            # we still have all the relevant locks for a transaction!
+            # Release write locks for a query
 
-        # cursor_site.execute("DELETE FROM Locks where Locks.transactionID == transactionID AND Locks.ProductID==ProductID")
+
+            # cursor_site.execute("DELETE FROM Locks where Locks.transactionID == transactionID AND Locks.ProductID==ProductID")
 
 
 def siteProcessing(row, query, file_path, transactionID, calc_time_left):
