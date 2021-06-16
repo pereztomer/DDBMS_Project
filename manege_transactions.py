@@ -199,10 +199,10 @@ def productProcessing(file_path, query, transactionID, wantedProductID, wantedAm
     ## ASKING FOR WRITING LOCK##
     ## TAKING READING LOCK
     ## insert into LOG
-    string_query_for_log = f"update Locks set lockType = ''{'Write'}'' where productID = {wantedProductID} and transactionID =''{transactionID}'')"
-    string_query_executable = f"update Locks set lockType = ''{'Write'}'' where productID = {wantedProductID} and transactionID ='{transactionID}')"
+    string_query_for_log = f"update Locks set lockType = ''{'Write'}'' where productID = {wantedProductID} and transactionID =''{transactionID}''"
+    string_query_executable = f"update Locks set lockType = '{'Write'}' where productID = {wantedProductID} and transactionID ='{transactionID}'"
     cursor_site.execute(
-        f"INSERT INTO Log(timestamp ,relation, transactionID,productID,action,record) VALUES ('{time.strftime('%Y-%m-%d %H:%M:%S')}','{'Locks'}','{transactionID}',{wantedProductID},'{'insert'}','{string_query_for_log}')")
+        f"INSERT INTO Log(timestamp ,relation, transactionID,productID,action,record) VALUES ('{time.strftime('%Y-%m-%d %H:%M:%S')}','{'Locks'}','{transactionID}',{wantedProductID},'{'update'}','{string_query_for_log}')")
 
     # TAKING WRITE LOCK ###
     cursor_site.execute(string_query_executable)
@@ -215,9 +215,11 @@ def productProcessing(file_path, query, transactionID, wantedProductID, wantedAm
         return False
 
     string_query = f"UPDATE ProductsInventory SET inventory = Inventory - {wantedAmount} WHERE ProductID={wantedProductID}"
-    cursor_site.execute("INSERT INTO Log(timestamp, transactionID, productID, action, record) VALUES (?,?,?,?,?)",
-                        (current_date, 'ProductsInventory', transactionID, wantedProductID, 'update', string_query))
+
+    cursor_site.execute(
+        f"INSERT INTO Log(timestamp ,relation, transactionID,productID,action,record) VALUES ('{time.strftime('%Y-%m-%d %H:%M:%S')}','{'ProductsInventory'}','{transactionID}',{wantedProductID},'{'update'}','{string_query}')")
     cursor_site.execute(string_query)
+    conn_site.commit()
     return True
 
 
