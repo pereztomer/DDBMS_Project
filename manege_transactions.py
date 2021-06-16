@@ -199,8 +199,8 @@ def productProcessing(file_path, query, transactionID, wantedProductID, wantedAm
     ## ASKING FOR WRITING LOCK##
     ## TAKING READING LOCK
     ## insert into LOG
-    string_query_for_log = f"insert into Locks(transactionID,ProductID,lockType) VALUES(''{transactionID}'',{wantedProductID},''{'Write'}'')"
-    string_query_executable = f"insert into Locks(transactionID,ProductID,lockType) VALUES('{transactionID}',{wantedProductID},'{'Write'}')"
+    string_query_for_log = f"update Locks set lockType = ''{'Write'}'' where productID = {wantedProductID} and transactionID =''{transactionID}'')"
+    string_query_executable = f"update Locks set lockType = ''{'Write'}'' where productID = {wantedProductID} and transactionID ='{transactionID}')"
     cursor_site.execute(
         f"INSERT INTO Log(timestamp ,relation, transactionID,productID,action,record) VALUES ('{time.strftime('%Y-%m-%d %H:%M:%S')}','{'Locks'}','{transactionID}',{wantedProductID},'{'insert'}','{string_query_for_log}')")
 
@@ -213,8 +213,8 @@ def productProcessing(file_path, query, transactionID, wantedProductID, wantedAm
     val = calc_time_left()
     if val <= 0:
         return False
-    # string_query = ("UPDATE ProductsInventory SET inventory = ? WHERE ProductID=?", Inventory - amount, wantedProductID)
-    string_query = "UPDATE ProductsInventory SET inventory = Inventory - amount WHERE ProductID=wantedProductID"
+
+    string_query = f"UPDATE ProductsInventory SET inventory = Inventory - {wantedAmount} WHERE ProductID={wantedProductID}"
     cursor_site.execute("INSERT INTO Log(timestamp, transactionID, productID, action, record) VALUES (?,?,?,?,?)",
                         (current_date, 'ProductsInventory', transactionID, wantedProductID, 'update', string_query))
     cursor_site.execute(string_query)
