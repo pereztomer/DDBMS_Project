@@ -80,9 +80,6 @@ def update_inventory(transactionID):
     release_locks = f"DELETE FROM Locks where Locks.transactionID = '{transactionID}'"
     cursor.execute(release_locks)
     conn.commit()
-    cursor.execute("update productsInventory set Inventory = 26 where productID = 1")
-    conn.commit()
-
 
 
 if __name__ == '__main__':
