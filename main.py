@@ -85,10 +85,7 @@ def update_inventory(transactionID):
 
 
 if __name__ == '__main__':
-    #functionDrop()
-    #create_tables()
-
-    manege_transactions.manege_transactions(100_000)
+    manege_transactions.manege_transactions(10000)
 
     ##DELETE##
 
