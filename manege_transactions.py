@@ -72,16 +72,23 @@ def manege_transactions(T):
             # we still have all the relevant locks for a transaction!
             # Release write locks for a query
 
-            for site, categoryID in site_to_rollback:
-                delete_locks_conn = connect_to_db(site)
-                cursor_delete_locks = delete_locks_conn.cursor()
-                delete_lock_query_for_log = f"DELETE FROM Locks where Locks.transactionID = ''{transactionID}''"
-                delete_lock_query_executable = f"DELETE FROM Locks where Locks.transactionID = '{transactionID}'"
-                for prodID in wantedProductID:
-                    log_query = f"INSERT INTO Log(timestamp ,relation, transactionID,productID,action,record) VALUES ('{time.strftime('%Y-%m-%d %H:%M:%S')}','{'Locks'}','{transactionID}',{prodID},'{'delete'}','{delete_lock_query_for_log}')"
-                    cursor_delete_locks.execute(log_query)
-                cursor_delete_locks.execute(delete_lock_query_executable)
-                delete_locks_conn.commit()
+            conn = connect_to_db('rubensasson')
+            cursor = conn.cursor()
+            cursor.execute('DELETE FROM Locks')
+            conn.commit()
+
+
+
+            # for site, categoryID in site_to_rollback:
+            #     delete_locks_conn = connect_to_db(site)
+            #     cursor_delete_locks = delete_locks_conn.cursor()
+            #     delete_lock_query_for_log = f"DELETE FROM Locks where Locks.transactionID = ''{transactionID}''"
+            #     delete_lock_query_executable = f"DELETE FROM Locks where Locks.transactionID = '{transactionID}'"
+            #     for prodID in wantedProductID:
+            #         log_query = f"INSERT INTO Log(timestamp ,relation, transactionID,productID,action,record) VALUES ('{time.strftime('%Y-%m-%d %H:%M:%S')}','{'Locks'}','{transactionID}',{prodID},'{'delete'}','{delete_lock_query_for_log}')"
+            #         cursor_delete_locks.execute(log_query)
+            #     cursor_delete_locks.execute(delete_lock_query_executable)
+            #     delete_locks_conn.commit()
 
 
 def siteProcessing(row, query, file_path, transactionID, calc_time_left):
