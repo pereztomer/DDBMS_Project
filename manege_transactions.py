@@ -67,6 +67,8 @@ def manege_transactions(T):
                         rollback_query = rollback_row[6]
                         rollback_query = rollback_query.replace('-', '+')
                         rollback_cursor.execute(rollback_query)
+                        rollback_cursor.execute(
+                            f"INSERT INTO Log(timestamp ,relation, transactionID,productID,action,record) VALUES ('{time.strftime('%Y-%m-%d %H:%M:%S')}','{'productsInventory'}','{transactionID}',{wantedProductID},'{'update'}','{rollback_query}')")
                         rollback_conn.commit()
 
             # we still have all the relevant locks for a transaction!
@@ -75,8 +77,11 @@ def manege_transactions(T):
             for site, categoryID in site_to_rollback:
                 delete_locks_conn = connect_to_db(site)
                 cursor_delete_locks = delete_locks_conn.cursor()
-                test_query = f"DELETE FROM Locks where Locks.transactionID = '{transactionID}'"
-                cursor_delete_locks.execute(test_query)
+                delete_lock_query_for_log = f"DELETE FROM Locks where Locks.transactionID = ''{transactionID}''"
+                delete_lock_query_executable = f"DELETE FROM Locks where Locks.transactionID = '{transactionID}'"
+                rollback_cursor.execute(
+                    f"INSERT INTO Log(timestamp ,relation, transactionID,productID,action,record) VALUES ('{time.strftime('%Y-%m-%d %H:%M:%S')}','{'Locks'}','{transactionID}',{wantedProductID},'{'delete'}','{delete_lock_query_for_log}')")
+                cursor_delete_locks.execute(delete_lock_query_executable)
                 delete_locks_conn.commit()
 
 
@@ -179,19 +184,19 @@ def productProcessing(file_path, query, transactionID, wantedProductID, wantedAm
             number_of_readLocks_cursor = cursor_site.execute("select count(*) from Locks where locks.productID =" + str(wantedProductID))
             number_of_readLocks_on_wantedProduct = number_of_readLocks_cursor.fetchone()[0]
 
-    ## WE ARE THE ONLY ONES WITH READ LOCK ON THE PRODUCT ###
-    ## ASKING FOR WRITING LOCK##
-    ## TAKING READING LOCK
-    ## insert into LOG
-    string_query_for_log = f"update Locks set lockType = ''{'Write'}'' where productID = {wantedProductID} and transactionID =''{transactionID}''"
-    string_query_executable = f"update Locks set lockType = '{'Write'}' where productID = {wantedProductID} and transactionID ='{transactionID}'"
-    cursor_site.execute(
-        f"INSERT INTO Log(timestamp ,relation, transactionID,productID,action,record) VALUES ('{time.strftime('%Y-%m-%d %H:%M:%S')}','{'Locks'}','{transactionID}',{wantedProductID},'{'update'}','{string_query_for_log}')")
+        ## WE ARE THE ONLY ONES WITH READ LOCK ON THE PRODUCT ###
+        ## ASKING FOR WRITING LOCK##
+        ## TAKING READING LOCK
+        ## insert into LOG
+        string_query_for_log = f"update Locks set lockType = ''{'Write'}'' where productID = {wantedProductID} and transactionID =''{transactionID}''"
+        string_query_executable = f"update Locks set lockType = '{'Write'}' where productID = {wantedProductID} and transactionID ='{transactionID}'"
+        cursor_site.execute(
+            f"INSERT INTO Log(timestamp ,relation, transactionID,productID,action,record) VALUES ('{time.strftime('%Y-%m-%d %H:%M:%S')}','{'Locks'}','{transactionID}',{wantedProductID},'{'update'}','{string_query_for_log}')")
 
-    # TAKING WRITE LOCK ###
-    cursor_site.execute(string_query_executable)
-    conn_site.commit()
-    ### NEED TO DELETE OUR READ LOCK HERE ###
+        # TAKING WRITE LOCK ###
+        cursor_site.execute(string_query_executable)
+        conn_site.commit()
+
 
     ## UPDATING INVENTORY
     val = calc_time_left()
