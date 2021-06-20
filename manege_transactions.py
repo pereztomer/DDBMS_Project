@@ -64,31 +64,26 @@ def manege_transactions(T):
                     rollback_cursor = rollback_conn.cursor()
                     rollback_cursor.execute(f"select * from Log where transactionID = '{transactionID}' AND productID in {wantedProductID_str} AND action = '{'update'}' and relation='{'productsInventory'}'")
                     for rollback_row in rollback_cursor:
+                        inner_rollback_conn = connect_to_db(site)
+                        inner_rollback_cursor = inner_rollback_conn.cursor()
                         rollback_query = rollback_row[6]
                         rollback_query = rollback_query.replace('-', '+')
-                        rollback_cursor.execute(rollback_query)
-                        rollback_conn.commit()
+                        inner_rollback_cursor.execute(rollback_query)
+                        inner_rollback_conn.commit()
 
             # we still have all the relevant locks for a transaction!
             # Release write locks for a query
 
-            conn = connect_to_db('rubensasson')
-            cursor = conn.cursor()
-            cursor.execute('DELETE FROM Locks')
-            conn.commit()
-
-
-
-            # for site, categoryID in site_to_rollback:
-            #     delete_locks_conn = connect_to_db(site)
-            #     cursor_delete_locks = delete_locks_conn.cursor()
-            #     delete_lock_query_for_log = f"DELETE FROM Locks where Locks.transactionID = ''{transactionID}''"
-            #     delete_lock_query_executable = f"DELETE FROM Locks where Locks.transactionID = '{transactionID}'"
-            #     for prodID in wantedProductID:
-            #         log_query = f"INSERT INTO Log(timestamp ,relation, transactionID,productID,action,record) VALUES ('{time.strftime('%Y-%m-%d %H:%M:%S')}','{'Locks'}','{transactionID}',{prodID},'{'delete'}','{delete_lock_query_for_log}')"
-            #         cursor_delete_locks.execute(log_query)
-            #     cursor_delete_locks.execute(delete_lock_query_executable)
-            #     delete_locks_conn.commit()
+            for site, categoryID in site_to_rollback:
+                delete_locks_conn = connect_to_db(site)
+                cursor_delete_locks = delete_locks_conn.cursor()
+                delete_lock_query_for_log = f"DELETE FROM Locks where Locks.transactionID = ''{transactionID}''"
+                delete_lock_query_executable = f"DELETE FROM Locks where Locks.transactionID = '{transactionID}'"
+                for prodID in wantedProductID:
+                    log_query = f"INSERT INTO Log(timestamp ,relation, transactionID,productID,action,record) VALUES ('{time.strftime('%Y-%m-%d %H:%M:%S')}','{'Locks'}','{transactionID}',{prodID},'{'delete'}','{delete_lock_query_for_log}')"
+                    cursor_delete_locks.execute(log_query)
+                cursor_delete_locks.execute(delete_lock_query_executable)
+                delete_locks_conn.commit()
 
 
 def siteProcessing(row, query, file_path, transactionID, calc_time_left):
