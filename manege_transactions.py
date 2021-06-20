@@ -68,8 +68,29 @@ def manege_transactions(T):
                         inner_rollback_cursor = inner_rollback_conn.cursor()
                         rollback_query = rollback_row[6]
                         rollback_query = rollback_query.replace('-', '+')
+                        inner_rollback_cursor.execute(f"INSERT INTO Log(timestamp ,relation, transactionID,productID,action,record) VALUES ('{time.strftime('%Y-%m-%d %H:%M:%S')}','{'ProductsInventory'}','{rollback_row[3]}',{rollback_row[4]},'{'update'}','{rollback_query}')")
                         inner_rollback_cursor.execute(rollback_query)
                         inner_rollback_conn.commit()
+            else:
+                print(f"Transaction {transactionID} completed")
+                for site_to_connect in site_to_rollback:
+                    wantedProductID = query.filter(query.categoryID == str(site_to_connect[1])).select('productID')
+                    wantedAmount = query.filter(query.categoryID == str(site_to_connect[1])).select('amount')
+                    wantedProductID = list(wantedProductID.toPandas()['productID'])
+                    wantedAmount = list(wantedAmount.toPandas()['amount'])
+                    for i in range(len(wantedAmount)):
+                        prod = wantedProductID[i]
+                        amount = wantedAmount[i]
+                        inner_update_ProductsOrdered_conn = connect_to_db(site_to_connect[0])
+                        inner_update_ProductsOrdered_cursor = inner_update_ProductsOrdered_conn.cursor()
+                        query_update_ProductsInventory_for_log = f"INSERT INTO ProductsOrdered(transactionID,productID,amount) VALUES (''{transactionID}'',{prod},{amount})"
+                        query_update_ProductsInventory_executable = f"INSERT INTO ProductsOrdered(transactionID,productID,amount) VALUES ('{transactionID}',{prod},{amount})"
+                        log_query_update_productOrdered = f"INSERT INTO Log(timestamp ,relation, transactionID,productID,action,record) VALUES ('{time.strftime('%Y-%m-%d %H:%M:%S')}','{'ProductsOrdered'}','{transactionID}',{prod},'{'update'}','{query_update_ProductsInventory_for_log}')"
+                        inner_update_ProductsOrdered_cursor.execute(log_query_update_productOrdered)
+                        inner_update_ProductsOrdered_cursor.execute(query_update_ProductsInventory_executable)
+                        inner_update_ProductsOrdered_conn.commit()
+
+
 
             # we still have all the relevant locks for a transaction!
             # Release write locks for a query
@@ -167,7 +188,7 @@ def productProcessing(file_path, query, transactionID, wantedProductID, wantedAm
     cursor_site.execute(reading_site_query)
     productInventoryValue = cursor_site.fetchone()[1]
     if productInventoryValue < int(wantedAmount):
-        print(f"Query {file_path} can not be completed")
+        print(f"Transaction {transactionID} can not be completed")
         return False
 
     # requesting writing lock for the whole website
