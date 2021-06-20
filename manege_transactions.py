@@ -50,7 +50,7 @@ def manege_transactions(T):
             rollback_flag = False
             for row in cursor:
                 site_to_rollback.append(row)
-                site_flag = siteProcessing(row, query, file_path, transactionID, calc_time_left)
+                site_flag = siteProcessing(row, query, transactionID, calc_time_left)
                 if site_flag == False:
                     rollback_flag = True
                     break
@@ -111,23 +111,23 @@ def manege_transactions(T):
                 delete_locks_conn.commit()
 
 
-def siteProcessing(row, query, file_path, transactionID, calc_time_left):
-    conn_site = connect_to_db(row[0])
+def siteProcessing(row, query, transactionID, calc_time_left):
     wantedProductID = query.filter(query.categoryID == str(row[1])).select('productID')
     wantedAmount = query.filter(query.categoryID == str(row[1])).select('amount')
     wantedProductID = list(wantedProductID.toPandas()['productID'])
     wantedAmount = list(wantedAmount.toPandas()['amount'])
-    cursor_site = conn_site.cursor()
     for i in range(len(wantedAmount)):
         prodID = wantedProductID[i]
         amount = wantedAmount[i]
-        if not productProcessing(file_path, query, transactionID, prodID, amount, cursor_site, conn_site, calc_time_left):
+        if not productProcessing(transactionID, prodID, amount, row[0], calc_time_left):
             # rollback
             return False
     return True
 
 
-def productProcessing(file_path, query, transactionID, wantedProductID, wantedAmount, cursor_site, conn_site, calc_time_left):
+def productProcessing(transactionID, wantedProductID, wantedAmount, site, calc_time_left):
+    conn_site = connect_to_db(site)
+    cursor_site = conn_site.cursor()
     lockCursor = cursor_site.execute("select count(distinct lockType) from Locks where locks.productID =" + str(wantedProductID))
     # No locks exist
     if lockCursor.fetchone()[0] == 0:
@@ -147,14 +147,18 @@ def productProcessing(file_path, query, transactionID, wantedProductID, wantedAm
         lockCursor_not_only_count = cursor_site.execute("select distinct lockType from Locks where locks.productID =" + str(wantedProductID))
         productLockType = lockCursor_not_only_count.fetchone()[0]
 
-
     while productLockType.lower() == 'write':
         #IF WE ENTER HERE WE KNOW THAT THE WRITE LOCK ON THE PRODUCT IS SOMEONE ELSE's.#
         #IF IT WAS OUR WRITE LOCKS WE WOULD HAVE : productLockType = 'noLockExists'#
         if calc_time_left() <= 0:
             return False
+        site_conn = connect_to_db(site)
+        cursor_site = site_conn.cursor()
         lockCursor = cursor_site.execute("select count(distinct lockType) from Locks where locks.productID =" + str(wantedProductID))
-        if lockCursor.fetchone()[0] == 0:
+        sum=0
+        for item in lockCursor:
+            sum += item[0]
+        if sum == 0:
             productLockType = 'noLockExists'
             # now we are taking a writing lock without checking availability in inventory
 
@@ -168,6 +172,8 @@ def productProcessing(file_path, query, transactionID, wantedProductID, wantedAm
             conn_site.commit()
 
         else:
+            site_conn = connect_to_db(site)
+            cursor_site = site_conn.cursor()
             lockCursor_not_only_count = cursor_site.execute("select distinct lockType from Locks where locks.productID =" + str(wantedProductID))
             productLockType = lockCursor_not_only_count.fetchone()[0]
 
