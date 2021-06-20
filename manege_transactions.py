@@ -85,7 +85,7 @@ def manege_transactions(T):
                         inner_update_ProductsOrdered_cursor = inner_update_ProductsOrdered_conn.cursor()
                         query_update_ProductsInventory_for_log = f"INSERT INTO ProductsOrdered(transactionID,productID,amount) VALUES (''{transactionID}'',{prod},{amount})"
                         query_update_ProductsInventory_executable = f"INSERT INTO ProductsOrdered(transactionID,productID,amount) VALUES ('{transactionID}',{prod},{amount})"
-                        log_query_update_productOrdered = f"INSERT INTO Log(timestamp ,relation, transactionID,productID,action,record) VALUES ('{time.strftime('%Y-%m-%d %H:%M:%S')}','{'ProductsOrdered'}','{transactionID}',{prod},'{'update'}','{query_update_ProductsInventory_for_log}')"
+                        log_query_update_productOrdered = f"INSERT INTO Log(timestamp ,relation, transactionID,productID,action,record) VALUES ('{time.strftime('%Y-%m-%d %H:%M:%S')}','{'ProductsOrdered'}','{transactionID}',{prod},'{'insert'}','{query_update_ProductsInventory_for_log}')"
                         inner_update_ProductsOrdered_cursor.execute(log_query_update_productOrdered)
                         inner_update_ProductsOrdered_cursor.execute(query_update_ProductsInventory_executable)
                         inner_update_ProductsOrdered_conn.commit()
@@ -130,12 +130,16 @@ def productProcessing(transactionID, wantedProductID, wantedAmount, site, calc_t
     cursor_site = conn_site.cursor()
     lockCursor = cursor_site.execute("select count(distinct lockType) from Locks where locks.productID =" + str(wantedProductID))
     if lockCursor.fetchone()[0] == 0:
-        productLockType = 'noLockExists'
         catch_write_lock(transactionID, wantedProductID, cursor_site, conn_site)
-
+        productLockType = 'noLockExists'
     else:
         lockCursor_not_only_count = cursor_site.execute("select distinct lockType from Locks where locks.productID =" + str(wantedProductID))
         productLockType = lockCursor_not_only_count.fetchone()[0]
+        if productLockType.lower() == 'read':
+            catch_read_lock(transactionID, wantedProductID, cursor_site, conn_site)
+
+    #  The products is locked by a write lock
+    #  or the product is locked by a read lock and we also have a read lock on it
 
     while productLockType.lower() == 'write':
         if calc_time_left() <= 0:
@@ -143,12 +147,13 @@ def productProcessing(transactionID, wantedProductID, wantedAmount, site, calc_t
         site_conn = connect_to_db(site)
         cursor_site = site_conn.cursor()
         lockCursor = cursor_site.execute("select count(distinct lockType) from Locks where locks.productID =" + str(wantedProductID))
-        sum=0
+        sum = 0
         for item in lockCursor:
             sum += item[0]
         if sum == 0:
-            productLockType = 'noLockExists'
+            # no locks for the product
             catch_write_lock(transactionID, wantedProductID, cursor_site, conn_site)
+            productLockType = 'noLockExists'
         else:
             conn_site = connect_to_db(site)
             cursor_site = conn_site.cursor()
@@ -157,14 +162,15 @@ def productProcessing(transactionID, wantedProductID, wantedAmount, site, calc_t
             for item in lockCursor:
                 sum += item[0]
             if sum == 0:
-                productLockType = 'noLockExists'
                 catch_write_lock(transactionID, wantedProductID, cursor_site, conn_site)
+                productLockType = 'noLockExists'
             else:
                 lockCursor_not_only_count = cursor_site.execute("select distinct lockType from Locks where locks.productID =" + str(wantedProductID))
                 productLockType = lockCursor_not_only_count.fetchone()[0]
+                if productLockType.lower() == 'read':
+                    catch_read_lock(transactionID, wantedProductID, cursor_site, conn_site)
 
-    if productLockType.lower() == 'read':
-        catch_read_lock(transactionID, wantedProductID, cursor_site, conn_site)
+    # now we have a read lock or write lock
 
     if not_enough_product(cursor_site, wantedProductID, wantedAmount):
         print(f"Transaction {transactionID} can not be completed")
@@ -180,6 +186,8 @@ def productProcessing(transactionID, wantedProductID, wantedAmount, site, calc_t
             number_of_readLocks_cursor = cursor_site.execute("select count(*) from Locks where locks.productID =" + str(wantedProductID))
             number_of_readLocks_on_wantedProduct = number_of_readLocks_cursor.fetchone()[0]
         update_read_to_write(transactionID, wantedProductID, cursor_site, conn_site)
+
+    # now we have a write lock on the product
 
     val = calc_time_left()
     if val <= 0:

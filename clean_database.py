@@ -18,5 +18,5 @@ def clean():
 
 if __name__ == '__main__':
     clean()
-    #update_inventory("gobel")
+    update_inventory("gobel")
 
