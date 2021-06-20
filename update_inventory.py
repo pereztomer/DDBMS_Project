@@ -31,7 +31,7 @@ def refill_inventory(cursor, transactionID, T=10):
 
         '''it means there is no lock on the productID we need'''
         if number_of_locks == 0:
-            write_lock_taking_query = f"insert into Locks(transactionID,ProductID,lockType) VALUES(''{transactionID}'',{i},''{'Write'}'')"
+            write_lock_taking_query = f"insert into Locks(transactionID,ProductID,lockType) VALUES('{transactionID}',{i},'{'Write'}')"
             '''Calling the update_log Function to inform we gona take lock'''
             update_log(cursor=cursor, _relation='Locks', _transactionID=transactionID, _productID=i,
                        _action='insert', _record=write_lock_taking_query)
@@ -59,7 +59,7 @@ def refill_inventory(cursor, transactionID, T=10):
 
 
 def update_log(cursor, _relation, _transactionID, _productID, _action, _record):
-    log_query = f"insert into Log(timestamp, relation, transactionID, ProductID, action, record) VALUES('{time.strftime('%Y-%m-%d %H:%M:%S')}','{'Locks'}', '{_transactionID}',{_productID},'{_action}','{_record}')"
+    log_query = f"insert into Log(timestamp, relation, transactionID, ProductID, action, record) VALUES('{time.strftime('%Y-%m-%d %H:%M:%S')}','{_relation}', '{_transactionID}',{_productID},'{_action}','{_record}')"
     cursor.execute(log_query)
 
 
@@ -74,27 +74,29 @@ def update_inventory(transactionID):
         '''It means that the DB wasn't Init so there can't be Locks because there are no PRODUCTS!'''
         for i in range(1, constants.Y + 1):
             ''' updating the inventory for the specific product'''
-            update_inventory_query = "INSERT INTO productsInventory(productID, inventory) VALUES (?,?)",(i, constants.P_AMOUNT)
+            update_inventory_query = f"INSERT INTO productsInventory(productID, inventory) VALUES ({i}, {constants.P_AMOUNT})"
+            update_inventory_query_log = f"INSERT INTO productsInventory(productID, inventory) VALUES ({i}, {constants.P_AMOUNT})"
             cursor.execute(update_inventory_query)
             conn.commit()
 
             '''taking the write lof for a a specific pID ### MUST BE AFTER THE INSERTO productsInventory bcs of KEYS ###'''
-            write_lock_query = f"insert into Locks(transactionID,ProductID,lockType) VALUES(''{transactionID}'',{i},''{'insert'}'')"
+            write_lock_query = f"insert into Locks(transactionID,ProductID,lockType) VALUES('{transactionID}',{i},'{'insert'}')"
+            write_lock_query_log = f"insert into Locks(transactionID,ProductID,lockType) VALUES(''{transactionID}'',{i},''{'insert'}'')"
             cursor.execute(write_lock_query)
             conn.commit()
 
             '''Updating the log table with PorductsInventory Update + Locks Table Update'''
             if i == 1:
                 continue
-            update_log(cursor, 'Locks', transactionID, i, 'insert', write_lock_query)
-            update_log(cursor, 'productsinventory', transactionID, i, 'insert', update_inventory_query)
+            update_log(cursor, 'Locks', transactionID, i, 'insert', write_lock_query_log)
+            update_log(cursor, 'productsinventory', transactionID, i, 'insert', update_inventory_query_log)
             conn.commit()
 
         '''Create the Product with ID == 1 (THE COMPLEMENTARY)'''
         complementary_inventory = f"update productsInventory set Inventory = {constants.COMPLEMENTARY_AMOUNT} where productID = 1"
         cursor.execute(complementary_inventory)
-        write_lock_query = f"insert into Locks(transactionID,ProductID,lockType) VALUES(''{transactionID}'',{1},''{'insert'}'')"
-        update_log(cursor, 'Locks', transactionID, i, 'insert', write_lock_query)
+        write_lock_query_log = f"insert into Locks(transactionID,ProductID,lockType) VALUES(''{transactionID}'', 1 ,''{'insert'}'')"
+        update_log(cursor, 'Locks', transactionID, i, 'insert', write_lock_query_log)
         update_log(cursor, 'productsinventory', transactionID, 1, 'insert', complementary_inventory)
         conn.commit()
     else:
@@ -104,10 +106,11 @@ def update_inventory(transactionID):
     conn.commit()
     '''Release all the locks '''
     release_locks = f"DELETE FROM Locks where Locks.transactionID = '{transactionID}'"
+    release_locks_log = f"DELETE FROM Locks where Locks.transactionID = ''{transactionID}''"
     cursor.execute(release_locks)
     '''updating the log that we Released all the locks '''
     for i in range(1, constants.Y + 1):
-        update_log(cursor, 'Locks', transactionID, i, 'insert', release_locks)
+        update_log(cursor, 'Locks', transactionID, i, 'insert', release_locks_log)
     conn.commit()
 
 
