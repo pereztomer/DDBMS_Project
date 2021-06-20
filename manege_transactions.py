@@ -81,7 +81,7 @@ def manege_transactions(T):
                 delete_lock_query_executable = f"DELETE FROM Locks where Locks.transactionID = '{transactionID}'"
                 cursor_delete_locks.execute(f"SELECT DISTINCT(productID) from Log WHERE Log.transactionID = '{transactionID}' AND Log.action = '{'insert'}'")
                 for prodID in cursor_delete_locks:
-                    log_query = f"INSERT INTO Log(timestamp ,relation, transactionID,productID,action,record) VALUES ('{time.strftime('%Y-%m-%d %H:%M:%S')}','{'Locks'}','{transactionID}',{prodID},'{'delete'}','{delete_lock_query_for_log}')"
+                    log_query = f"INSERT INTO Log(timestamp ,relation, transactionID,productID,action,record) VALUES ('{time.strftime('%Y-%m-%d %H:%M:%S')}','{'Locks'}','{transactionID}',{prodID[0]},'{'delete'}','{delete_lock_query_for_log}')"
                     cursor_delete_locks.execute(log_query)
                 cursor_delete_locks.execute(delete_lock_query_executable)
                 delete_locks_conn.commit()
