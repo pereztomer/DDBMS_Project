@@ -67,8 +67,6 @@ def manege_transactions(T):
                         rollback_query = rollback_row[6]
                         rollback_query = rollback_query.replace('-', '+')
                         rollback_cursor.execute(rollback_query)
-                        rollback_cursor.execute(
-                            f"INSERT INTO Log(timestamp ,relation, transactionID,productID,action,record) VALUES ('{time.strftime('%Y-%m-%d %H:%M:%S')}','{'productsInventory'}','{transactionID}',{wantedProductID},'{'update'}','{rollback_query}')")
                         rollback_conn.commit()
 
             # we still have all the relevant locks for a transaction!
@@ -79,8 +77,8 @@ def manege_transactions(T):
                 cursor_delete_locks = delete_locks_conn.cursor()
                 delete_lock_query_for_log = f"DELETE FROM Locks where Locks.transactionID = ''{transactionID}''"
                 delete_lock_query_executable = f"DELETE FROM Locks where Locks.transactionID = '{transactionID}'"
-                rollback_cursor.execute(
-                    f"INSERT INTO Log(timestamp ,relation, transactionID,productID,action,record) VALUES ('{time.strftime('%Y-%m-%d %H:%M:%S')}','{'Locks'}','{transactionID}',{wantedProductID},'{'delete'}','{delete_lock_query_for_log}')")
+                log_query = f"INSERT INTO Log(timestamp ,relation, transactionID,productID,action,record) VALUES ('{time.strftime('%Y-%m-%d %H:%M:%S')}','{'Locks'}','{transactionID}',{wantedProductID},'{'delete'}','{delete_lock_query_for_log}')"
+                cursor_delete_locks.execute(log_query)
                 cursor_delete_locks.execute(delete_lock_query_executable)
                 delete_locks_conn.commit()
 
@@ -192,11 +190,10 @@ def productProcessing(file_path, query, transactionID, wantedProductID, wantedAm
         string_query_executable = f"update Locks set lockType = '{'Write'}' where productID = {wantedProductID} and transactionID ='{transactionID}'"
         cursor_site.execute(
             f"INSERT INTO Log(timestamp ,relation, transactionID,productID,action,record) VALUES ('{time.strftime('%Y-%m-%d %H:%M:%S')}','{'Locks'}','{transactionID}',{wantedProductID},'{'update'}','{string_query_for_log}')")
-
         # TAKING WRITE LOCK ###
         cursor_site.execute(string_query_executable)
         conn_site.commit()
-
+    ### NEED TO DELETE OUR READ LOCK HERE ###
 
     ## UPDATING INVENTORY
     val = calc_time_left()

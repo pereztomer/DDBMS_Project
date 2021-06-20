@@ -4,7 +4,7 @@ import pyodbc
 import time
 import main
 import constants
-
+from update_inventory import update_inventory
 
 def clean():
     conn = main.connect_to_db('rubensasson')
@@ -18,3 +18,5 @@ def clean():
 
 if __name__ == '__main__':
     clean()
+    update_inventory("gobel")
+
