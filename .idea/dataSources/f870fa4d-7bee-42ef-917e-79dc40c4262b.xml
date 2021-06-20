@@ -1,0 +1,360 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<dataSource name="rubensasson@technionddscourse.database.windows.net">
+  <database-model serializer="dbm" dbms="AZURE" family-id="AZURE" format-version="4.20">
+    <root id="1">
+      <ServerVersion>12.0.2148</ServerVersion>
+      <Dbms>AZURE</Dbms>
+    </root>
+    <database id="2" parent="1" name="master">
+      <ObjectId>1</ObjectId>
+    </database>
+    <database id="3" parent="1" name="rubensasson">
+      <ObjectId>13</ObjectId>
+      <PermissionsCheckSum>2118039708</PermissionsCheckSum>
+      <Grants>13|database||1|connect|G
+13|database||5|connect|G
+</Grants>
+      <Current>1</Current>
+      <Collation>SQL_Latin1_General_CP1_CI_AS</Collation>
+      <Fingerprint>13.44344/46AE1262-7F90-4D6E-9E71-82BFEB41F4AA@technionddscourse</Fingerprint>
+    </database>
+    <schema id="4" parent="3" name="INFORMATION_SCHEMA">
+      <ObjectId>3</ObjectId>
+    </schema>
+    <schema id="5" parent="3" name="db_accessadmin">
+      <ObjectId>16385</ObjectId>
+    </schema>
+    <schema id="6" parent="3" name="db_backupoperator">
+      <ObjectId>16389</ObjectId>
+    </schema>
+    <schema id="7" parent="3" name="db_datareader">
+      <ObjectId>16390</ObjectId>
+    </schema>
+    <schema id="8" parent="3" name="db_datawriter">
+      <ObjectId>16391</ObjectId>
+    </schema>
+    <schema id="9" parent="3" name="db_ddladmin">
+      <ObjectId>16387</ObjectId>
+    </schema>
+    <schema id="10" parent="3" name="db_denydatareader">
+      <ObjectId>16392</ObjectId>
+    </schema>
+    <schema id="11" parent="3" name="db_denydatawriter">
+      <ObjectId>16393</ObjectId>
+    </schema>
+    <schema id="12" parent="3" name="db_owner">
+      <ObjectId>16384</ObjectId>
+    </schema>
+    <schema id="13" parent="3" name="db_securityadmin">
+      <ObjectId>16386</ObjectId>
+    </schema>
+    <schema id="14" parent="3" name="dbo">
+      <ObjectId>1</ObjectId>
+      <IntrospectionTimestamp>2021-06-17.19:00:53.483</IntrospectionTimestamp>
+      <Current>1</Current>
+    </schema>
+    <schema id="15" parent="3" name="guest">
+      <ObjectId>2</ObjectId>
+    </schema>
+    <schema id="16" parent="3" name="sys">
+      <ObjectId>4</ObjectId>
+    </schema>
+    <role id="17" parent="3" name="public">
+      <ObjectId>0</ObjectId>
+      <OwnerId>1</OwnerId>
+      <Type>database-role</Type>
+      <AuthType>none</AuthType>
+    </role>
+    <role id="18" parent="3" name="dbo">
+      <ObjectId>1</ObjectId>
+      <DefaultSchema>dbo</DefaultSchema>
+      <AuthType>instance</AuthType>
+    </role>
+    <role id="19" parent="3" name="guest">
+      <ObjectId>2</ObjectId>
+      <DefaultSchema>guest</DefaultSchema>
+      <AuthType>none</AuthType>
+    </role>
+    <role id="20" parent="3" name="INFORMATION_SCHEMA">
+      <ObjectId>3</ObjectId>
+      <AuthType>none</AuthType>
+    </role>
+    <role id="21" parent="3" name="sys">
+      <ObjectId>4</ObjectId>
+      <AuthType>none</AuthType>
+    </role>
+    <role id="22" parent="3" name="rubensasson">
+      <ObjectId>5</ObjectId>
+      <DefaultSchema>dbo</DefaultSchema>
+    </role>
+    <role id="23" parent="3" name="db_owner">
+      <ObjectId>16384</ObjectId>
+      <OwnerId>1</OwnerId>
+      <Type>database-role</Type>
+      <AuthType>none</AuthType>
+    </role>
+    <role id="24" parent="3" name="db_accessadmin">
+      <ObjectId>16385</ObjectId>
+      <OwnerId>1</OwnerId>
+      <Type>database-role</Type>
+      <AuthType>none</AuthType>
+    </role>
+    <role id="25" parent="3" name="db_securityadmin">
+      <ObjectId>16386</ObjectId>
+      <OwnerId>1</OwnerId>
+      <Type>database-role</Type>
+      <AuthType>none</AuthType>
+    </role>
+    <role id="26" parent="3" name="db_ddladmin">
+      <ObjectId>16387</ObjectId>
+      <OwnerId>1</OwnerId>
+      <Type>database-role</Type>
+      <AuthType>none</AuthType>
+    </role>
+    <role id="27" parent="3" name="db_backupoperator">
+      <ObjectId>16389</ObjectId>
+      <OwnerId>1</OwnerId>
+      <Type>database-role</Type>
+      <AuthType>none</AuthType>
+    </role>
+    <role id="28" parent="3" name="db_datareader">
+      <ObjectId>16390</ObjectId>
+      <OwnerId>1</OwnerId>
+      <Type>database-role</Type>
+      <AuthType>none</AuthType>
+    </role>
+    <role id="29" parent="3" name="db_datawriter">
+      <ObjectId>16391</ObjectId>
+      <OwnerId>1</OwnerId>
+      <Type>database-role</Type>
+      <AuthType>none</AuthType>
+    </role>
+    <role id="30" parent="3" name="db_denydatareader">
+      <ObjectId>16392</ObjectId>
+      <OwnerId>1</OwnerId>
+      <Type>database-role</Type>
+      <AuthType>none</AuthType>
+    </role>
+    <role id="31" parent="3" name="db_denydatawriter">
+      <ObjectId>16393</ObjectId>
+      <OwnerId>1</OwnerId>
+      <Type>database-role</Type>
+      <AuthType>none</AuthType>
+    </role>
+    <table id="32" parent="14" name="Locks">
+      <ObjectId>2018106230</ObjectId>
+      <CreatedTimestamp>2021-06-15.20:09:50.757</CreatedTimestamp>
+      <ModifiedTimestamp>2021-06-15.20:09:50.757</ModifiedTimestamp>
+    </table>
+    <table id="33" parent="14" name="Log">
+      <ObjectId>1938105945</ObjectId>
+      <CreatedTimestamp>2021-06-15.20:09:50.550</CreatedTimestamp>
+      <ModifiedTimestamp>2021-06-15.20:09:50.550</ModifiedTimestamp>
+    </table>
+    <table id="34" parent="14" name="ProductsInventory">
+      <ObjectId>1842105603</ObjectId>
+      <CreatedTimestamp>2021-06-15.20:09:50.140</CreatedTimestamp>
+      <ModifiedTimestamp>2021-06-15.20:09:50.763</ModifiedTimestamp>
+    </table>
+    <table id="35" parent="14" name="ProductsOrdered">
+      <ObjectId>1890105774</ObjectId>
+      <CreatedTimestamp>2021-06-15.20:09:50.347</CreatedTimestamp>
+      <ModifiedTimestamp>2021-06-15.20:09:50.347</ModifiedTimestamp>
+    </table>
+    <column id="36" parent="32" name="transactionID">
+      <Position>1</Position>
+      <DataType>varchar(30 char)|0s</DataType>
+      <NotNull>1</NotNull>
+    </column>
+    <column id="37" parent="32" name="productID">
+      <Position>2</Position>
+      <DataType>int|0s</DataType>
+      <NotNull>1</NotNull>
+    </column>
+    <column id="38" parent="32" name="lockType">
+      <Position>3</Position>
+      <DataType>varchar(10 char)|0s</DataType>
+      <NotNull>1</NotNull>
+    </column>
+    <index id="39" parent="32" name="PK__Locks__2D32942EC5EE254B">
+      <Position>1</Position>
+      <NameSurrogate>1</NameSurrogate>
+      <ColNames>transactionID
+productID
+lockType</ColNames>
+      <Clustering>1</Clustering>
+      <Unique>1</Unique>
+    </index>
+    <key id="40" parent="32" name="PK__Locks__2D32942EC5EE254B">
+      <ObjectId>2034106287</ObjectId>
+      <NameSurrogate>1</NameSurrogate>
+      <CreatedTimestamp>2021-06-15.20:09:50.760</CreatedTimestamp>
+      <ModifiedTimestamp>2021-06-15.20:09:50.760</ModifiedTimestamp>
+      <ColNames>transactionID
+productID
+lockType</ColNames>
+      <UnderlyingIndexName>PK__Locks__2D32942EC5EE254B</UnderlyingIndexName>
+      <Primary>1</Primary>
+    </key>
+    <foreign-key id="41" parent="32" name="FK__Locks__productID__7A3223E8">
+      <ObjectId>2050106344</ObjectId>
+      <NameSurrogate>1</NameSurrogate>
+      <CreatedTimestamp>2021-06-15.20:09:50.760</CreatedTimestamp>
+      <ModifiedTimestamp>2021-06-15.20:09:50.760</ModifiedTimestamp>
+      <ColNames>productID</ColNames>
+      <RefTableId>1842105603</RefTableId>
+      <RefTableName>ProductsInventory</RefTableName>
+      <RefKeyName>PK__Products__2D10D14A54D17CFF</RefKeyName>
+      <RefColNames>productID</RefColNames>
+    </foreign-key>
+    <column id="42" parent="33" name="rowID">
+      <Position>1</Position>
+      <SequenceIdentity>1</SequenceIdentity>
+      <DataType>int|0s</DataType>
+      <NotNull>1</NotNull>
+    </column>
+    <column id="43" parent="33" name="timestamp">
+      <Position>2</Position>
+      <DataType>datetime|0s</DataType>
+    </column>
+    <column id="44" parent="33" name="relation">
+      <Position>3</Position>
+      <DataType>varchar(20 char)|0s</DataType>
+    </column>
+    <column id="45" parent="33" name="transactionID">
+      <Position>4</Position>
+      <DataType>varchar(30 char)|0s</DataType>
+    </column>
+    <column id="46" parent="33" name="productID">
+      <Position>5</Position>
+      <DataType>int|0s</DataType>
+    </column>
+    <column id="47" parent="33" name="action">
+      <Position>6</Position>
+      <DataType>varchar(10 char)|0s</DataType>
+    </column>
+    <column id="48" parent="33" name="record">
+      <Position>7</Position>
+      <DataType>varchar(2500 char)|0s</DataType>
+    </column>
+    <index id="49" parent="33" name="PK__Log__4B58DA60F2CAA170">
+      <Position>1</Position>
+      <NameSurrogate>1</NameSurrogate>
+      <ColNames>rowID</ColNames>
+      <Clustering>1</Clustering>
+      <Unique>1</Unique>
+    </index>
+    <key id="50" parent="33" name="PK__Log__4B58DA60F2CAA170">
+      <ObjectId>1954106002</ObjectId>
+      <NameSurrogate>1</NameSurrogate>
+      <CreatedTimestamp>2021-06-15.20:09:50.553</CreatedTimestamp>
+      <ModifiedTimestamp>2021-06-15.20:09:50.553</ModifiedTimestamp>
+      <ColNames>rowID</ColNames>
+      <UnderlyingIndexName>PK__Log__4B58DA60F2CAA170</UnderlyingIndexName>
+      <Primary>1</Primary>
+    </key>
+    <foreign-key id="51" parent="33" name="FK__Log__productID__76619304">
+      <ObjectId>1986106116</ObjectId>
+      <NameSurrogate>1</NameSurrogate>
+      <CreatedTimestamp>2021-06-15.20:09:50.557</CreatedTimestamp>
+      <ModifiedTimestamp>2021-06-15.20:09:50.557</ModifiedTimestamp>
+      <ColNames>productID</ColNames>
+      <RefTableId>1842105603</RefTableId>
+      <RefTableName>ProductsInventory</RefTableName>
+      <RefKeyName>PK__Products__2D10D14A54D17CFF</RefKeyName>
+      <RefColNames>productID</RefColNames>
+    </foreign-key>
+    <check id="52" parent="33" name="CK__Log__action__756D6ECB">
+      <ObjectId>1970106059</ObjectId>
+      <NameSurrogate>1</NameSurrogate>
+      <CreatedTimestamp>2021-06-15.20:09:50.557</CreatedTimestamp>
+      <ModifiedTimestamp>2021-06-15.20:09:50.557</ModifiedTimestamp>
+      <ColNames>action</ColNames>
+      <Predicate>[action]=&apos;insert&apos; OR [action]=&apos;delete&apos; OR [action]=&apos;update&apos; OR [action]=&apos;read&apos;</Predicate>
+    </check>
+    <check id="53" parent="33" name="CK__Log__relation__7755B73D">
+      <ObjectId>2002106173</ObjectId>
+      <NameSurrogate>1</NameSurrogate>
+      <CreatedTimestamp>2021-06-15.20:09:50.560</CreatedTimestamp>
+      <ModifiedTimestamp>2021-06-15.20:09:50.560</ModifiedTimestamp>
+      <ColNames>relation</ColNames>
+      <Predicate>[relation]=&apos;ProductsInventory&apos; OR [relation]=&apos;Locks&apos; OR [relation]=&apos;ProductsOrdered&apos;</Predicate>
+    </check>
+    <column id="54" parent="34" name="productID">
+      <Position>1</Position>
+      <DataType>int|0s</DataType>
+      <NotNull>1</NotNull>
+    </column>
+    <column id="55" parent="34" name="inventory">
+      <Position>2</Position>
+      <DataType>int|0s</DataType>
+    </column>
+    <index id="56" parent="34" name="PK__Products__2D10D14A54D17CFF">
+      <Position>1</Position>
+      <NameSurrogate>1</NameSurrogate>
+      <ColNames>productID</ColNames>
+      <Clustering>1</Clustering>
+      <Unique>1</Unique>
+    </index>
+    <key id="57" parent="34" name="PK__Products__2D10D14A54D17CFF">
+      <ObjectId>1858105660</ObjectId>
+      <NameSurrogate>1</NameSurrogate>
+      <CreatedTimestamp>2021-06-15.20:09:50.147</CreatedTimestamp>
+      <ModifiedTimestamp>2021-06-15.20:09:50.147</ModifiedTimestamp>
+      <ColNames>productID</ColNames>
+      <UnderlyingIndexName>PK__Products__2D10D14A54D17CFF</UnderlyingIndexName>
+      <Primary>1</Primary>
+    </key>
+    <check id="58" parent="34" name="CK__ProductsI__inven__6FB49575">
+      <ObjectId>1874105717</ObjectId>
+      <NameSurrogate>1</NameSurrogate>
+      <CreatedTimestamp>2021-06-15.20:09:50.147</CreatedTimestamp>
+      <ModifiedTimestamp>2021-06-15.20:09:50.147</ModifiedTimestamp>
+      <ColNames>inventory</ColNames>
+      <Predicate>[inventory]&gt;=0</Predicate>
+    </check>
+    <column id="59" parent="35" name="transactionID">
+      <Position>1</Position>
+      <DataType>varchar(30 char)|0s</DataType>
+      <NotNull>1</NotNull>
+    </column>
+    <column id="60" parent="35" name="productID">
+      <Position>2</Position>
+      <DataType>int|0s</DataType>
+      <NotNull>1</NotNull>
+    </column>
+    <column id="61" parent="35" name="amount">
+      <Position>3</Position>
+      <DataType>int|0s</DataType>
+    </column>
+    <index id="62" parent="35" name="PK__Products__2986C24691D5E0BB">
+      <Position>1</Position>
+      <NameSurrogate>1</NameSurrogate>
+      <ColNames>transactionID
+productID</ColNames>
+      <Clustering>1</Clustering>
+      <Unique>1</Unique>
+    </index>
+    <key id="63" parent="35" name="PK__Products__2986C24691D5E0BB">
+      <ObjectId>1906105831</ObjectId>
+      <NameSurrogate>1</NameSurrogate>
+      <CreatedTimestamp>2021-06-15.20:09:50.350</CreatedTimestamp>
+      <ModifiedTimestamp>2021-06-15.20:09:50.350</ModifiedTimestamp>
+      <ColNames>transactionID
+productID</ColNames>
+      <UnderlyingIndexName>PK__Products__2986C24691D5E0BB</UnderlyingIndexName>
+      <Primary>1</Primary>
+    </key>
+    <foreign-key id="64" parent="35" name="FK__ProductsO__produ__72910220">
+      <ObjectId>1922105888</ObjectId>
+      <NameSurrogate>1</NameSurrogate>
+      <CreatedTimestamp>2021-06-15.20:09:50.350</CreatedTimestamp>
+      <ModifiedTimestamp>2021-06-15.20:09:50.350</ModifiedTimestamp>
+      <ColNames>productID</ColNames>
+      <RefTableId>1842105603</RefTableId>
+      <RefTableName>ProductsInventory</RefTableName>
+      <RefKeyName>PK__Products__2D10D14A54D17CFF</RefKeyName>
+      <RefColNames>productID</RefColNames>
+    </foreign-key>
+  </database-model>
+</dataSource>
