@@ -62,7 +62,7 @@ def create_tables():
 
 if __name__ == '__main__':
     #update_inventory("gobel")
-    manege_transactions.manege_transactions(100)
+    manege_transactions.manege_transactions(200)
 
     ##INSERT###
 

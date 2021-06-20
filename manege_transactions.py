@@ -46,7 +46,8 @@ def manege_transactions(T):
             conn = connect_to_db('dbteam')
             cursor = conn.cursor()
             site_to_rollback = []
-            cursor.execute('select distinct siteName, categoryID from CategoriesToSites where categoryID in'+categories)
+            cursor.execute(
+                'select distinct siteName, categoryID from CategoriesToSites where categoryID in' + categories)
             rollback_flag = False
             for row in cursor:
                 site_to_rollback.append(row)
@@ -55,20 +56,21 @@ def manege_transactions(T):
                     rollback_flag = True
                     break
 
-
             if rollback_flag:
                 # We do not need to obtain the locks again because we kept them
                 # We  do not need a lock for log table
                 for site, categoryID in site_to_rollback:
                     rollback_conn = connect_to_db(site)
                     rollback_cursor = rollback_conn.cursor()
-                    rollback_cursor.execute(f"select * from Log where transactionID = '{transactionID}' AND productID in {wantedProductID_str} AND action = '{'update'}' and relation='{'productsInventory'}'")
+                    rollback_cursor.execute(
+                        f"select * from Log where transactionID = '{transactionID}' AND productID in {wantedProductID_str} AND action = '{'update'}' and relation='{'productsInventory'}'")
                     for rollback_row in rollback_cursor:
                         inner_rollback_conn = connect_to_db(site)
                         inner_rollback_cursor = inner_rollback_conn.cursor()
                         rollback_query = rollback_row[6]
                         rollback_query = rollback_query.replace('-', '+')
-                        inner_rollback_cursor.execute(f"INSERT INTO Log(timestamp ,relation, transactionID,productID,action,record) VALUES ('{time.strftime('%Y-%m-%d %H:%M:%S')}','{'ProductsInventory'}','{rollback_row[3]}',{rollback_row[4]},'{'update'}','{rollback_query}')")
+                        inner_rollback_cursor.execute(
+                            f"INSERT INTO Log(timestamp ,relation, transactionID,productID,action,record) VALUES ('{time.strftime('%Y-%m-%d %H:%M:%S')}','{'ProductsInventory'}','{rollback_row[3]}',{rollback_row[4]},'{'update'}','{rollback_query}')")
                         inner_rollback_cursor.execute(rollback_query)
                         inner_rollback_conn.commit()
             else:
@@ -90,8 +92,6 @@ def manege_transactions(T):
                         inner_update_ProductsOrdered_cursor.execute(query_update_ProductsInventory_executable)
                         inner_update_ProductsOrdered_conn.commit()
 
-
-
             # we still have all the relevant locks for a transaction!
             # Release write locks for a query
 
@@ -100,7 +100,8 @@ def manege_transactions(T):
                 cursor_delete_locks = delete_locks_conn.cursor()
                 delete_lock_query_for_log = f"DELETE FROM Locks where Locks.transactionID = ''{transactionID}''"
                 delete_lock_query_executable = f"DELETE FROM Locks where Locks.transactionID = '{transactionID}'"
-                cursor_delete_locks.execute(f"SELECT DISTINCT(productID) from Log WHERE Log.transactionID = '{transactionID}' AND Log.action = '{'insert'}'")
+                cursor_delete_locks.execute(
+                    f"SELECT DISTINCT(productID) from Log WHERE Log.transactionID = '{transactionID}' AND Log.action = '{'insert'}'")
                 for prodID in cursor_delete_locks:
                     inner_delete_locks_conn = connect_to_db(site)
                     inner_cursor_delete_locks = inner_delete_locks_conn.cursor()
@@ -119,8 +120,11 @@ def siteProcessing(row, query, transactionID, calc_time_left):
     for i in range(len(wantedAmount)):
         prodID = wantedProductID[i]
         amount = wantedAmount[i]
-        if not productProcessing(transactionID, prodID, amount, row[0], calc_time_left):
-            # rollback
+        try:
+            if not productProcessing(transactionID, prodID, amount, row[0], calc_time_left):
+                # rollback
+                return False
+        except:
             return False
     return True
 
@@ -128,12 +132,14 @@ def siteProcessing(row, query, transactionID, calc_time_left):
 def productProcessing(transactionID, wantedProductID, wantedAmount, site, calc_time_left):
     conn_site = connect_to_db(site)
     cursor_site = conn_site.cursor()
-    lockCursor = cursor_site.execute("select count(distinct lockType) from Locks where locks.productID =" + str(wantedProductID))
+    lockCursor = cursor_site.execute(
+        "select count(distinct lockType) from Locks where locks.productID =" + str(wantedProductID))
     if lockCursor.fetchone()[0] == 0:
         catch_write_lock(transactionID, wantedProductID, cursor_site, conn_site)
         productLockType = 'noLockExists'
     else:
-        lockCursor_not_only_count = cursor_site.execute("select distinct lockType from Locks where locks.productID =" + str(wantedProductID))
+        lockCursor_not_only_count = cursor_site.execute(
+            "select distinct lockType from Locks where locks.productID =" + str(wantedProductID))
         productLockType = lockCursor_not_only_count.fetchone()[0]
         if productLockType.lower() == 'read':
             catch_read_lock(transactionID, wantedProductID, cursor_site, conn_site)
@@ -146,7 +152,8 @@ def productProcessing(transactionID, wantedProductID, wantedAmount, site, calc_t
             return False
         site_conn = connect_to_db(site)
         cursor_site = site_conn.cursor()
-        lockCursor = cursor_site.execute("select count(distinct lockType) from Locks where locks.productID =" + str(wantedProductID))
+        lockCursor = cursor_site.execute(
+            "select count(distinct lockType) from Locks where locks.productID =" + str(wantedProductID))
         sum = 0
         for item in lockCursor:
             sum += item[0]
@@ -157,7 +164,8 @@ def productProcessing(transactionID, wantedProductID, wantedAmount, site, calc_t
         else:
             conn_site = connect_to_db(site)
             cursor_site = conn_site.cursor()
-            lockCursor = cursor_site.execute("select count(distinct lockType) from Locks where locks.productID =" + str(wantedProductID))
+            lockCursor = cursor_site.execute(
+                "select count(distinct lockType) from Locks where locks.productID =" + str(wantedProductID))
             sum = 0
             for item in lockCursor:
                 sum += item[0]
@@ -165,7 +173,8 @@ def productProcessing(transactionID, wantedProductID, wantedAmount, site, calc_t
                 catch_write_lock(transactionID, wantedProductID, cursor_site, conn_site)
                 productLockType = 'noLockExists'
             else:
-                lockCursor_not_only_count = cursor_site.execute("select distinct lockType from Locks where locks.productID =" + str(wantedProductID))
+                lockCursor_not_only_count = cursor_site.execute(
+                    "select distinct lockType from Locks where locks.productID =" + str(wantedProductID))
                 productLockType = lockCursor_not_only_count.fetchone()[0]
                 if productLockType.lower() == 'read':
                     catch_read_lock(transactionID, wantedProductID, cursor_site, conn_site)
@@ -177,13 +186,15 @@ def productProcessing(transactionID, wantedProductID, wantedAmount, site, calc_t
         return False
 
     if productLockType.lower() == 'read':
-        number_of_readLocks_cursor = cursor_site.execute("select count(*) from Locks where locks.productID =" + str(wantedProductID))
+        number_of_readLocks_cursor = cursor_site.execute(
+            "select count(*) from Locks where locks.productID =" + str(wantedProductID))
         number_of_readLocks_on_wantedProduct = number_of_readLocks_cursor.fetchone()[0]
         while number_of_readLocks_on_wantedProduct > 1:
             val = calc_time_left()
             if val <= 0:
                 return False
-            number_of_readLocks_cursor = cursor_site.execute("select count(*) from Locks where locks.productID =" + str(wantedProductID))
+            number_of_readLocks_cursor = cursor_site.execute(
+                "select count(*) from Locks where locks.productID =" + str(wantedProductID))
             number_of_readLocks_on_wantedProduct = number_of_readLocks_cursor.fetchone()[0]
         update_read_to_write(transactionID, wantedProductID, cursor_site, conn_site)
 
@@ -193,26 +204,29 @@ def productProcessing(transactionID, wantedProductID, wantedAmount, site, calc_t
         return False
     conn_site = connect_to_db(site)
     cursor_site = conn_site.cursor()
-    lockCursor = cursor_site.execute("select count(distinct lockType) from Locks where locks.productID =" + str(wantedProductID))
+    lockCursor = cursor_site.execute(
+        "select count(distinct lockType) from Locks where locks.productID =" + str(wantedProductID))
     sum = 0
     for item in lockCursor:
         sum += item[0]
     if sum == 0:
         return False
     if sum != 0:
-        lockCursor_not_only_count = cursor_site.execute("select distinct lockType from Locks where locks.productID =" + str(wantedProductID))
+        lockCursor_not_only_count = cursor_site.execute(
+            "select distinct lockType from Locks where locks.productID =" + str(wantedProductID))
         productLockType = lockCursor_not_only_count.fetchone()[0]
         if productLockType.lower() == 'read':
             return False
-    else:
-        update_inventory(cursor_site, conn_site, wantedAmount, wantedProductID, transactionID)
-        return True
+        else:
+            update_inventory(cursor_site, conn_site, wantedAmount, wantedProductID, transactionID)
+            return True
 
 
 def catch_write_lock(transactionID, wantedProductID, cursor_site, conn_site):
     string_query_for_log = f"insert into Locks(transactionID,ProductID,lockType) VALUES(''{transactionID}'',{wantedProductID},''{'Write'}'')"
     string_query_executable = f"insert into Locks(transactionID,ProductID,lockType) VALUES('{transactionID}',{wantedProductID},'{'Write'}')"
-    cursor_site.execute(f"INSERT INTO Log(timestamp ,relation, transactionID,productID,action,record) VALUES ('{time.strftime('%Y-%m-%d %H:%M:%S')}','{'Locks'}','{transactionID}',{wantedProductID},'{'insert'}','{string_query_for_log}')")
+    cursor_site.execute(
+        f"INSERT INTO Log(timestamp ,relation, transactionID,productID,action,record) VALUES ('{time.strftime('%Y-%m-%d %H:%M:%S')}','{'Locks'}','{transactionID}',{wantedProductID},'{'insert'}','{string_query_for_log}')")
 
     # TAKING WRITE LOCK ###
     cursor_site.execute(string_query_executable)
@@ -222,7 +236,8 @@ def catch_write_lock(transactionID, wantedProductID, cursor_site, conn_site):
 def catch_read_lock(transactionID, wantedProductID, cursor_site, conn_site):
     string_query_for_log = f"insert into Locks(transactionID,ProductID,lockType) VALUES(''{transactionID}'',{wantedProductID},''{'Read'}'')"
     string_query_executable = f"insert into Locks(transactionID,ProductID,lockType) VALUES('{transactionID}',{wantedProductID},'{'Read'}')"
-    cursor_site.execute( f"INSERT INTO Log(timestamp ,relation, transactionID,productID,action,record) VALUES ('{time.strftime('%Y-%m-%d %H:%M:%S')}','{'Locks'}','{transactionID}',{wantedProductID},'{'insert'}','{string_query_for_log}')")
+    cursor_site.execute(
+        f"INSERT INTO Log(timestamp ,relation, transactionID,productID,action,record) VALUES ('{time.strftime('%Y-%m-%d %H:%M:%S')}','{'Locks'}','{transactionID}',{wantedProductID},'{'insert'}','{string_query_for_log}')")
     cursor_site.execute(string_query_executable)
     conn_site.commit()
 
@@ -230,7 +245,8 @@ def catch_read_lock(transactionID, wantedProductID, cursor_site, conn_site):
 def update_read_to_write(transactionID, wantedProductID, cursor_site, conn_site):
     string_query_for_log = f"update Locks set lockType = ''{'Write'}'' where productID = {wantedProductID} and transactionID =''{transactionID}''"
     string_query_executable = f"update Locks set lockType = '{'Write'}' where productID = {wantedProductID} and transactionID ='{transactionID}'"
-    cursor_site.execute( f"INSERT INTO Log(timestamp ,relation, transactionID,productID,action,record) VALUES ('{time.strftime('%Y-%m-%d %H:%M:%S')}','{'Locks'}','{transactionID}',{wantedProductID},'{'update'}','{string_query_for_log}')")
+    cursor_site.execute(
+        f"INSERT INTO Log(timestamp ,relation, transactionID,productID,action,record) VALUES ('{time.strftime('%Y-%m-%d %H:%M:%S')}','{'Locks'}','{transactionID}',{wantedProductID},'{'update'}','{string_query_for_log}')")
     cursor_site.execute(string_query_executable)
     conn_site.commit()
 
@@ -246,20 +262,20 @@ def not_enough_product(cursor_site, wantedProductID, wantedAmount):
 
 
 def update_inventory(cursor_site, conn_site, wantedAmount, wantedProductID, transactionID):
-    #print("update inventory with wantedProductID = " + str(wantedProductID) + "and wanted Amount = " + str(wantedAmount) + "and transactionID = " + str(transactionID))
+    # print("update inventory with wantedProductID = " + str(wantedProductID) + "and wanted Amount = " + str(wantedAmount) + "and transactionID = " + str(transactionID))
     string_query = f"UPDATE ProductsInventory SET inventory = Inventory - {wantedAmount} WHERE ProductID={wantedProductID}"
-    #print("1")
+    # print("1")
     cursor_site.execute(
         f"INSERT INTO Log(timestamp ,relation, transactionID,productID,action,record) VALUES ('{time.strftime('%Y-%m-%d %H:%M:%S')}','{'ProductsInventory'}','{transactionID}',{wantedProductID},'{'update'}','{string_query}')")
-    #print("2")
+    # print("2")
     cursor_site.execute(string_query)
-    #print("3")
+    # print("3")
     conn_site.commit()
-    #print("4")
+    # print("4")
+
 
 def func_cal_time_left(T, initial_time):
     def calc_time_left():
         return T - (time.time() - initial_time)
+
     return calc_time_left
-
-
