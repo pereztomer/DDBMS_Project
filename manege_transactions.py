@@ -202,7 +202,7 @@ def catch_write_lock(transactionID, wantedProductID, cursor_site, conn_site):
 def catch_read_lock(transactionID, wantedProductID, cursor_site, conn_site):
     string_query_for_log = f"insert into Locks(transactionID,ProductID,lockType) VALUES(''{transactionID}'',{wantedProductID},''{'Read'}'')"
     string_query_executable = f"insert into Locks(transactionID,ProductID,lockType) VALUES('{transactionID}',{wantedProductID},'{'Read'}')"
-    cursor_site.execute( f"INSERT INTO Log(timestamp ,relation, transactionID,productID,action,record) VALUES ('{time.strftime('%Y-%m-%d %H:%M:%S')}','{'Locks'}','{transactionID}',{wantedProductID},'{'insert'}','{string_query_for_log}')")
+    cursor_site.execute(f"INSERT INTO Log(timestamp ,relation, transactionID,productID,action,record) VALUES ('{time.strftime('%Y-%m-%d %H:%M:%S')}','{'Locks'}','{transactionID}',{wantedProductID},'{'insert'}','{string_query_for_log}')")
     cursor_site.execute(string_query_executable)
     conn_site.commit()
 
