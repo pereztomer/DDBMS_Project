@@ -68,11 +68,16 @@ def manege_transactions(T):
                         inner_rollback_cursor = inner_rollback_conn.cursor()
                         rollback_query = rollback_row[6]
                         rollback_query = rollback_query.replace('-', '+')
+                        inner_rollback_cursor.execute(
+                            f"INSERT INTO Log(timestamp ,relation, transactionID,productID,action,record) VALUES ('{time.strftime('%Y-%m-%d %H:%M:%S')}','{'ProductsInventory'}','{rollback_row[3]}',{rollback_row[4]},'{'update'}','{rollback_query}')")
                         inner_rollback_cursor.execute(rollback_query)
                         inner_rollback_conn.commit()
 
             # we still have all the relevant locks for a transaction!
             # Release write locks for a query
+            else:
+                for site, categoryID in site_to_rollback:
+                    products_ordered_conn = connect_to_db(site)
 
             for site, categoryID in site_to_rollback:
                 delete_locks_conn = connect_to_db(site)
@@ -88,6 +93,8 @@ def manege_transactions(T):
                     inner_delete_locks_conn.commit()
                 cursor_delete_locks.execute(delete_lock_query_executable)
                 delete_locks_conn.commit()
+
+
 
 
 def siteProcessing(row, query, file_path, transactionID, calc_time_left):
