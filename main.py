@@ -3,7 +3,7 @@ import constants
 import manege_transactions
 import datetime
 from pyspark.sql.functions import asc, current_date
-
+from update_inventory import update_inventory
 def connect_to_db(username):
     server = 'technionddscourse.database.windows.net'
     database = username
@@ -60,41 +60,9 @@ def create_tables():
     conn.commit()
 
 
-
-
-
-
-def update_inventory(transactionID):
-    # needs to check if we need to update log table
-    conn = connect_to_db('rubensasson')
-    cursor = conn.cursor()
-    query = cursor.execute('select * from productsInventory')
-    if query.count() == 0:
-        for i in range(1, constants.Y):
-            if i == 1:
-                cursor.execute("INSERT INTO productsInventory(productID, inventory) VALUES (?,?)",
-                                (i, constants.COMPLEMENTARY_AMOUNT))
-            else:
-                cursor.execute("INSERT INTO productsInventory(productID, inventory) VALUES (?,?)",
-                               (i, constants.P_AMOUNT))
-    else:
-        cursor.execute('UPDATE productsInventory SET Inventory = constants.COMPLEMENTARY_AMOUNT Where productID = 1')
-        cursor.execute("UPDATE productsInventory SET Inventory = constants.P_AMOUNT Where productID != 1")
-
-
-
-
 if __name__ == '__main__':
-    manege_transactions.manege_transactions(10000)
-
-    ##DELETE##
-
-    # conn = connect_to_db("rubensasson")
-    # personnal_cursor = conn.cursor()
-    # personnal_cursor.execute('''DELETE FROM Locks WHERE productID=2 AND transactionID='Bonk_11' ''')
-    # personnal_cursor.execute('''DELETE FROM Log WHERE productID=2 AND transactionID='Bonk_11' ''')
-    # conn.commit()
-
+    #update_inventory("gobel")
+    manege_transactions.manege_transactions(100000)
 
     ##INSERT###
 

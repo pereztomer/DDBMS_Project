@@ -47,15 +47,14 @@ def manege_transactions(T):
             cursor = conn.cursor()
             site_to_rollback = []
             cursor.execute('select distinct siteName, categoryID from CategoriesToSites where categoryID in'+categories)
-            site_flag = True
             rollback_flag = False
             for row in cursor:
                 site_to_rollback.append(row)
-                
-                if not site_flag:
+                site_flag = siteProcessing(row, query, file_path, transactionID, calc_time_left)
+                if site_flag == False:
                     rollback_flag = True
                     break
-                site_flag = siteProcessing(row, query, file_path, transactionID, calc_time_left)
+
 
             if rollback_flag:
                 # We do not need to obtain the locks again because we kept them
@@ -63,7 +62,7 @@ def manege_transactions(T):
                 for site, categoryID in site_to_rollback:
                     rollback_conn = connect_to_db(site)
                     rollback_cursor = rollback_conn.cursor()
-                    rollback_cursor.execute(f"select * from Log where transactionID = '{transactionID}' AND productID in {wantedProductID_str} AND action = '{'update'}'")
+                    rollback_cursor.execute(f"select * from Log where transactionID = '{transactionID}' AND productID in {wantedProductID_str} AND action = '{'update'}' and relation='{'productsInventory'}'")
                     for rollback_row in rollback_cursor:
                         rollback_query = rollback_row[6]
                         rollback_query = rollback_query.replace('-', '+')
@@ -117,12 +116,8 @@ def productProcessing(file_path, query, transactionID, wantedProductID, wantedAm
         lockCursor_not_only_count = cursor_site.execute("select distinct lockType from Locks where locks.productID =" + str(wantedProductID))
         productLockType = lockCursor_not_only_count.fetchone()[0]
 
-    counter = 0
+
     while productLockType.lower() == 'write':
-        if counter == 3:
-            lockCursor.execute("Delete from Locks where locks.productID =" + str(wantedProductID))
-            conn_site.commit()
-        counter+=1
         #IF WE ENTER HERE WE KNOW THAT THE WRITE LOCK ON THE PRODUCT IS SOMEONE ELSE's.#
         #IF IT WAS OUR WRITE LOCKS WE WOULD HAVE : productLockType = 'noLockExists'#
         if calc_time_left() <= 0:
