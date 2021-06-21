@@ -57,6 +57,7 @@ def manege_transactions(T):
 
 
             if rollback_flag:
+                print(f"Transaction {transactionID} can not be completed")
                 # We do not need to obtain the locks again because we kept them
                 # We  do not need a lock for log table
                 for site, categoryID in site_to_rollback:
@@ -167,7 +168,6 @@ def productProcessing(transactionID, wantedProductID, wantedAmount, site, calc_t
         catch_read_lock(transactionID, wantedProductID, cursor_site, conn_site)
 
     if not_enough_product(cursor_site, wantedProductID, wantedAmount):
-        print(f"Transaction {transactionID} can not be completed")
         return False
 
     if productLockType.lower() == 'read':
@@ -189,10 +189,17 @@ def productProcessing(transactionID, wantedProductID, wantedAmount, site, calc_t
         #BUT AS WE SAW IN THE TEST IT IS NOT ALWAYS THE CASE#
         #THE INVENTORY WILL NOT BE UPDATED BY THE TRANSACTION, BUT THE TRANSACTION STILL WILL APPEAR#
         #AS SUCCESSFULL AND ROLLBACK WILL NOT HAPPEN#
-
-        #WE CAN CHECK HERE IF THE TRANSACTION HAS A WRITE LOCK ON THE PRODUCT#
-        #IF IT IS NOT THE CASE : return False#
-        #THEN ROLL BACK WILL HAPPEN#
+        # WE CAN CHECK HERE IF THE TRANSACTION HAS A WRITE LOCK ON THE PRODUCT#
+        # IF IT IS NOT THE CASE : return False#
+        # THEN ROLL BACK WILL HAPPEN#
+        conn_site = connect_to_db(site)
+        cursor_site = conn_site.cursor()
+        string_query = f"select * from Locks where locks.productID = {wantedProductID} AND locks.transactionID = '{transactionID}' AND locks.lockType = '{'Write'}'"
+        write_checking_cursor = cursor_site.execute(string_query)
+        r = write_checking_cursor.fetchone()
+        noWriteLock = r is None
+        if noWriteLock:
+            return False
         update_inventory(cursor_site, conn_site, wantedAmount, wantedProductID, transactionID)
         return True
 
@@ -218,7 +225,7 @@ def catch_read_lock(transactionID, wantedProductID, cursor_site, conn_site):
 def update_read_to_write(transactionID, wantedProductID, cursor_site, conn_site):
     string_query_for_log = f"update Locks set lockType = ''{'Write'}'' where productID = {wantedProductID} and transactionID =''{transactionID}''"
     string_query_executable = f"update Locks set lockType = '{'Write'}' where productID = {wantedProductID} and transactionID ='{transactionID}'"
-    cursor_site.execute( f"INSERT INTO Log(timestamp ,relation, transactionID,productID,action,record) VALUES ('{time.strftime('%Y-%m-%d %H:%M:%S')}','{'Locks'}','{transactionID}',{wantedProductID},'{'update'}','{string_query_for_log}')")
+    cursor_site.execute(f"INSERT INTO Log(timestamp ,relation, transactionID,productID,action,record) VALUES ('{time.strftime('%Y-%m-%d %H:%M:%S')}','{'Locks'}','{transactionID}',{wantedProductID},'{'update'}','{string_query_for_log}')")
     cursor_site.execute(string_query_executable)
     conn_site.commit()
 
