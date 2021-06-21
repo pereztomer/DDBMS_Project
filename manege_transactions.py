@@ -185,6 +185,14 @@ def productProcessing(transactionID, wantedProductID, wantedAmount, site, calc_t
     if val <= 0:
         return False
     else:
+        #HERE THE TRANSACTION IS SUPPOSED TO HAVE A WRITE LOCK ON wantedProductID#
+        #BUT AS WE SAW IN THE TEST IT IS NOT ALWAYS THE CASE#
+        #THE INVENTORY WILL NOT BE UPDATED BY THE TRANSACTION, BUT THE TRANSACTION STILL WILL APPEAR#
+        #AS SUCCESSFULL AND ROLLBACK WILL NOT HAPPEN#
+
+        #WE CAN CHECK HERE IF THE TRANSACTION HAS A WRITE LOCK ON THE PRODUCT#
+        #IF IT IS NOT THE CASE : return False#
+        #THEN ROLL BACK WILL HAPPEN#
         update_inventory(cursor_site, conn_site, wantedAmount, wantedProductID, transactionID)
         return True
 
