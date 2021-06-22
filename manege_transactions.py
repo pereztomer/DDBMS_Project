@@ -55,7 +55,6 @@ def manege_transactions(T):
                     rollback_flag = True
                     break
 
-
             if rollback_flag:
                 print(f"Transaction {transactionID} can not be completed")
                 # We do not need to obtain the locks again because we kept them
@@ -144,20 +143,18 @@ def productProcessing(transactionID, wantedProductID, wantedAmount, site, calc_t
         site_conn = connect_to_db(site)
         cursor_site = site_conn.cursor()
         lockCursor = cursor_site.execute("select count(distinct lockType) from Locks where locks.productID =" + str(wantedProductID))
-        sum=0
-        for item in lockCursor:
-            sum += item[0]
-        if sum == 0:
+        r = lockCursor.fetchone()
+        noWriteLock = r is None
+        if noWriteLock:
             productLockType = 'noLockExists'
             catch_write_lock(transactionID, wantedProductID, cursor_site, conn_site)
         else:
             conn_site = connect_to_db(site)
             cursor_site = conn_site.cursor()
             lockCursor = cursor_site.execute("select count(distinct lockType) from Locks where locks.productID =" + str(wantedProductID))
-            sum = 0
-            for item in lockCursor:
-                sum += item[0]
-            if sum == 0:
+            r = lockCursor.fetchone()
+            noWriteLock = r is None
+            if noWriteLock:
                 productLockType = 'noLockExists'
                 catch_write_lock(transactionID, wantedProductID, cursor_site, conn_site)
             else:
@@ -185,13 +182,6 @@ def productProcessing(transactionID, wantedProductID, wantedAmount, site, calc_t
     if val <= 0:
         return False
     else:
-        #HERE THE TRANSACTION IS SUPPOSED TO HAVE A WRITE LOCK ON wantedProductID#
-        #BUT AS WE SAW IN THE TEST IT IS NOT ALWAYS THE CASE#
-        #THE INVENTORY WILL NOT BE UPDATED BY THE TRANSACTION, BUT THE TRANSACTION STILL WILL APPEAR#
-        #AS SUCCESSFULL AND ROLLBACK WILL NOT HAPPEN#
-        # WE CAN CHECK HERE IF THE TRANSACTION HAS A WRITE LOCK ON THE PRODUCT#
-        # IF IT IS NOT THE CASE : return False#
-        # THEN ROLL BACK WILL HAPPEN#
         conn_site = connect_to_db(site)
         cursor_site = conn_site.cursor()
         string_query = f"select * from Locks where locks.productID = {wantedProductID} AND locks.transactionID = '{transactionID}' AND locks.lockType = '{'Write'}'"
@@ -242,11 +232,11 @@ def not_enough_product(cursor_site, wantedProductID, wantedAmount):
 
 def update_inventory(cursor_site, conn_site, wantedAmount, wantedProductID, transactionID):
     string_query = f"UPDATE ProductsInventory SET inventory = Inventory - {wantedAmount} WHERE ProductID={wantedProductID}"
-
     cursor_site.execute(
         f"INSERT INTO Log(timestamp ,relation, transactionID,productID,action,record) VALUES ('{time.strftime('%Y-%m-%d %H:%M:%S')}','{'ProductsInventory'}','{transactionID}',{wantedProductID},'{'update'}','{string_query}')")
     cursor_site.execute(string_query)
     conn_site.commit()
+
 
 def func_cal_time_left(T, initial_time):
     def calc_time_left():
