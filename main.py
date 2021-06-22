@@ -3,8 +3,8 @@ import manege_transactions
 
 
 if __name__ == '__main__':
-    #manege_transactions.update_inventory('yosi')
-    manege_transactions.manege_transactions(100)
+    manege_transactions.update_inventory('yosi')
+    #manege_transactions.manege_transactions(100)
 
     ##INSERT###
 

@@ -138,7 +138,7 @@ def update_inventory(transactionID):
     cursor.execute(release_locks)
     '''updating the log that we Released all the locks '''
     for i in range(1, Y + 1):
-        update_log(cursor, 'Locks', transactionID, i, 'insert', release_locks_log)
+        update_log(cursor, 'Locks', transactionID, i, 'delete', release_locks_log)
     conn.commit()
 
 
@@ -170,7 +170,7 @@ def refill_inventory(cursor, transactionID, T=100):
             cursor.execute(inserting_query)
             '''updating the log table for reffilling the productID inventory'''
             cursor.execute(
-                f"INSERT INTO Log(timestamp ,relation, transactionID,productID,action,record) VALUES ('{time.strftime('%Y-%m-%d %H:%M:%S')}','{'productsInventory'}','{transactionID}',{i},'{'insert'}','{inserting_query}')")
+                f"INSERT INTO Log(timestamp ,relation, transactionID,productID,action,record) VALUES ('{time.strftime('%Y-%m-%d %H:%M:%S')}','{'productsInventory'}','{transactionID}',{i},'{'update'}','{inserting_query}')")
         else:
             '''TIMES UP'''
             print(f"Your request to refill product {i} could not be completed")
