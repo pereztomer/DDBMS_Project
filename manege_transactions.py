@@ -21,7 +21,6 @@ def lock_directory(directory_pass='C:/Users/Tomer/PycharmProjects/DDBMS_Project/
 
 
 def manege_transactions(T):
-    calc_time_left = func_cal_time_left(T, time.time())
     dir_name = 'orders/'
     list_of_files = sorted(filter(os.path.isfile, glob.glob(dir_name + '*')))
     lock_directory()
@@ -36,6 +35,7 @@ def manege_transactions(T):
         if not file_path.endswith('_11.csv'):
             print(f"File {file_path} not in correct format - was rejected")
         else:
+            calc_time_left = func_cal_time_left(T / len(list_of_files), time.time())
             transactionID = os.path.splitext(os.path.basename(file_path))[0]
             query = spark.read.format("csv").option("header", "true").load(file_path)
             wantedProductID = list(query.select('productID').toPandas()['productID'])
@@ -132,12 +132,13 @@ def productProcessing(transactionID, wantedProductID, wantedAmount, site, calc_t
         cursor_site = conn_site.cursor()
         lockCursor = cursor_site.execute(
             f"select distinct lockType from Locks where locks.productID = {wantedProductID} and transactionID != '{transactionID}'")
-        if lockCursor.fetchone() is None:
+        temp = lockCursor.fetchone()
+        if temp is None:
             get_write_lock(transactionID, wantedProductID, site)
             if enough_product(wantedProductID, wantedAmount, site):
                 break
             return False
-        elif lockCursor.fetchone()[0].lower() == 'read':
+        elif temp[0].lower() == 'read':
             # maybe there are two results from the query - both read and write
             catch_read_lock(transactionID, wantedProductID, site)
             if enough_product(wantedProductID, wantedAmount,site):
