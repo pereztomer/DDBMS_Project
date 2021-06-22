@@ -155,12 +155,13 @@ def refill_inventory(cursor, transactionID, T=100):
 
         '''it means there is no lock on the productID we need'''
         if number_of_locks == 0:
-            write_lock_taking_query = f"insert into Locks(transactionID,ProductID,lockType) VALUES('{transactionID}',{i},'{'Write'}')"
+            write_lock_taking_query_log = f"insert into Locks(transactionID,ProductID,lockType) VALUES(''{transactionID}'',{i},''{'Write'}'')"
+            write_lock_taking_query_exec = f"insert into Locks(transactionID,ProductID,lockType) VALUES('{transactionID}',{i},'{'Write'}')"
             '''Calling the update_log Function to inform we gona take lock'''
             update_log(cursor=cursor, _relation='Locks', _transactionID=transactionID, _productID=i,
-                       _action='insert', _record=write_lock_taking_query)
+                       _action='insert', _record=write_lock_taking_query_log)
             '''Actually Taking Write Lock on all product (=every iteration)'''
-            cursor.execute(write_lock_taking_query)
+            cursor.execute(write_lock_taking_query_exec)
 
             if i == 1:
                 continue
