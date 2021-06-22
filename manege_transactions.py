@@ -16,14 +16,9 @@ def init_spark(app_name: str):
     return spark, sc
 
 
-def lock_directory(directory_pass='C:/Users/Tomer/PycharmProjects/DDBMS_Project/orders/'):
-    pass
-
-
 def manege_transactions(T):
     dir_name = 'orders/'
     list_of_files = sorted(filter(os.path.isfile, glob.glob(dir_name + '*')))
-    lock_directory()
     if len(list_of_files) == 0:
         print("Currently no queries available")
         return

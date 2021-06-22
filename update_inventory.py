@@ -25,7 +25,7 @@ def refill_inventory(cursor, transactionID, T=10):
         lock_table = cursor.execute('Select count (distinct LockType) from Locks where productID =' + str(i))
         number_of_locks = lock_table.fetchone()[0]
 
-        while number_of_locks != 0 and initial_time - time.time() > T / constants.Y:
+        while number_of_locks != 0 and initial_time - time.time() > (T / constants.Y):
             lock_table = cursor.execute('Select count (distinct LockType) from Locks where productID =' + str(i))
             number_of_locks = lock_table.fetchone()[0]
 
